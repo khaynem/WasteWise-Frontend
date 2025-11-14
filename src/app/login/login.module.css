@@ -1,0 +1,560 @@
+.container {
+  height: 100vh;
+  background-image: url('/images/wwbg.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-color: rgba(45, 45, 45, 0.662);
+  background-blend-mode: overlay;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: 'Helvetica', Arial, sans-serif;
+  overflow: hidden;
+}
+
+.contentWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.logoContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px;
+  text-align: center;
+  font-family: 'Helvetica', Arial, sans-serif;
+  max-width: 500px;
+  width: 100%;
+}
+
+.logo {
+  width: 150px;
+  height: auto;
+  margin-bottom: 30px;
+  background: white;
+  border-radius: 50%;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.title {
+  color: white;
+  font-size: 3.5rem;
+  font-weight: bold;
+  margin: 0 0 20px 0;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.subtitle {
+  color: #dcf7ea;
+  font-size: 1.15rem;
+  margin: 0;
+  font-weight: 400;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .subtitle {
+    white-space: normal;
+    text-align: center;
+    line-height: 1.3;
+  }
+}
+
+.formContainer {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  padding: 40px;
+  width: 500px;
+  height: 600px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.formContainer.signInTab {
+  height: 450px;
+  padding: 35px;
+}
+
+.formContainer.signInTab .tabs {
+  margin-bottom: 20px;
+}
+
+.formContainer.signInTab .inputGroup {
+  margin-bottom: 16px;
+}
+
+.formContainer.signInTab .forgotPassword {
+  margin-bottom: 12px;
+}
+
+.formContainer.signInTab .submitButton {
+  margin-top: 6px;
+}
+
+.formContainer.signInTab .termsNotice {
+  margin-top: 12px;
+}
+
+.formContainer.createAccountTab {
+  height: 650px;
+  padding: 40px;
+}
+
+.formContainer.createAccountTab .tabs {
+  margin-bottom: 25px;
+}
+
+.formContainer.createAccountTab .inputGroup {
+  margin-bottom: 16px;
+}
+
+.formContainer.createAccountTab .agreementContainer {
+  margin-bottom: 18px;
+}
+
+.formContainer.createAccountTab .submitButton {
+  margin-top: 8px;
+}
+
+.formContainer.createAccountTab .errorText {
+  font-size: 0.7rem;
+  margin-top: 3px;
+  min-height: 12px;
+  max-height: 24px;
+}
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid #e0e0e0;
+  margin-bottom: 25px;
+  font-family: 'Helvetica', Arial, sans-serif;
+}
+
+.tab {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 15px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  font-family: 'Helvetica', Arial, sans-serif;
+}
+
+.tab:hover {
+  color: #059956;
+}
+
+.activeTab {
+  color: #059956;
+  border-bottom: 2px solid #059956;
+  transform: translateY(-1px);
+}
+
+.form {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.form.tabTransition {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.inputGroup {
+  margin-bottom: 18px;
+  transition: all 0.3s ease;
+}
+
+.inputGroup label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #333;
+  font-size: 0.9rem;
+  font-family: 'Helvetica', Arial, sans-serif;
+}
+
+.input {
+  width: 100%;
+  padding: 12px 16px;
+  background: white;
+  border: 2px solid #d0d0d0;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: 'Helvetica', Arial, sans-serif;
+  color: black;
+  transition: border-color 0.3s ease;
+  box-sizing: border-box;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #059956;
+}
+
+.inputError {
+  border-color: #e74c3c;
+}
+
+.passwordContainer {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.passwordInput {
+  padding-right: 50px;
+}
+
+.eyeButton {
+  position: absolute;
+  right: 12px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 4px;
+  color: #666;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: 'Helvetica', Arial, sans-serif;
+}
+
+.eyeButton:hover {
+  color: #059956;
+  transform: scale(1.1);
+}
+
+.errorText {
+  color: #e74c3c;
+  font-size: 0.75rem;
+  margin-top: 4px;
+  display: block;
+  min-height: 14px;
+  line-height: 1.1;
+  max-height: 28px;
+  overflow: hidden;
+}
+
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus,
+.input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  box-shadow: 0 0 0px 1000px #ffffff inset !important;
+  -webkit-text-fill-color: #000000 !important;
+  caret-color: #000000 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+.input::placeholder {
+  color: #9ca3af;
+}
+
+.forgotPassword {
+  text-align: right;
+  margin-bottom: 12px;
+  color: #059956;
+  text-decoration: underline;
+}
+
+.forgotPasswordLink {
+  background: none;
+  border: none;
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.forgotPasswordLink:hover {
+  color: #048a4a;
+  transform: translateY(-1px);
+}
+
+.termsNotice {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #666;
+  margin-top: 15px;
+  line-height: 1.4;
+}
+
+.termsLink {
+  background: none;
+  border: none;
+  color: #059956;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: inherit;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.termsLink:hover {
+  color: #048a4a;
+  transform: translateY(-1px);
+}
+
+.agreementContainer {
+  margin-bottom: 18px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: flex-start;
+  cursor: pointer;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.checkbox {
+  margin-right: 10px;
+  margin-top: 2px;
+  width: 16px;
+  height: 16px;
+  accent-color: #059956;
+  cursor: pointer;
+}
+
+.checkboxText {
+  color: #666;
+  flex: 1;
+}
+
+.submitButton {
+  width: 100%;
+  background-color: #059956;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  margin-top: 8px;
+  font-family: 'Helvetica', Arial, sans-serif;
+}
+
+.submitButton:hover {
+  background-color: #048a4a;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(5, 153, 86, 0.3);
+}
+
+.submitButton:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(5, 153, 86, 0.2);
+}
+
+/* Responsive design */
+@media (max-width: 1024px) {
+  .contentWrapper {
+    max-width: 90%;
+    gap: 20px;
+  }
+  
+  .logoContainer {
+    padding: 50px 30px;
+  }
+  
+  .formContainer {
+    width: 450px;
+  }
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 70px 10px 30px 10px;
+    overflow-y: auto;
+    min-height: 100vh;
+    box-sizing: border-box;
+  }
+  
+  .contentWrapper {
+    flex-direction: column;
+    max-width: 100%;
+    padding: 0;
+    gap: 0;
+  }
+  
+  .logoContainer {
+    padding: 30px 20px;
+    max-width: 100%;
+    height: auto;
+    min-height: 200px;
+  }
+  
+  .formContainer {
+    width: 100%;
+    max-width: 100%;
+    border-radius: 20px;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.15);
+    padding: 30px;
+    min-height: 400px;
+    height: auto;
+    box-sizing: border-box;
+  }
+  
+  .formContainer.signInTab {
+    min-height: 350px;
+  }
+  
+  .formContainer.createAccountTab {
+    min-height: 500px;
+  }
+  
+  .title {
+    font-size: 2.5rem;
+  }
+  
+  .subtitle {
+    font-size: 1rem;
+  }
+  
+  .logo {
+    width: 120px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+      padding: 40px 5px 25px 5px;
+    overflow-y: auto;
+    height: 100vh;
+  }
+  
+  .contentWrapper {
+    padding: 0;
+  }
+  
+  .logoContainer {
+    padding: 20px 15px;
+    min-height: 100px;
+    margin-bottom: 15px;
+  }
+  
+  .formContainer {
+    padding: 20px 15px;
+    border-radius: 15px 15px 0 0;
+  }
+  
+  .formContainer.signInTab {
+    min-height: 320px;
+  }
+  
+  .formContainer.createAccountTab {
+    min-height: 350px;
+  }
+  
+  .title {
+    font-size: 2rem;
+    margin-bottom: 15px;
+  }
+  
+  .subtitle {
+    font-size: 0.9rem;
+  }
+  
+  .logo {
+    width: 100px;
+    padding: 15px;
+  }
+  
+  .tabs {
+    margin-bottom: 20px;
+  }
+  
+  .tab {
+    padding: 12px 15px;
+    font-size: 0.9rem;
+  }
+  
+  .inputGroup {
+    margin-bottom: 15px;
+  }
+  
+  .inputGroup label {
+    font-size: 0.85rem;
+  }
+  
+  .input {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+  
+  .submitButton {
+    padding: 10px 15px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .logoContainer {
+    padding: 15px 10px;
+    min-height: 120px;
+  }
+  
+  .formContainer {
+    padding: 15px 10px;
+  }
+  
+  .formContainer.signInTab {
+    min-height: 300px;
+  }
+  
+  .formContainer.createAccountTab {
+    min-height: 400px;
+  }
+  
+  .title {
+    font-size: 1.8rem;
+    margin-bottom: 10px;
+  }
+  
+  .subtitle {
+    font-size: 0.8rem;
+  }
+  
+  .logo {
+    width: 80px;
+    padding: 12px;
+  }
+  
+  .tab {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+  
+  .input {
+    padding: 8px 10px;
+    font-size: 0.85rem;
+  }
+  
+  .submitButton {
+    padding: 8px 12px;
+    font-size: 0.85rem;
+  }
+}
