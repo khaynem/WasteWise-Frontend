@@ -143,7 +143,7 @@ export default function ChallengesPage() {
         try {
             setIsSubmitting(true);
             const form = new FormData();
-            form.append("image", submissionImage);
+            form.append("file", submissionImage);
             form.append("description", submissionText.trim());
 
             const res = await api.post(
