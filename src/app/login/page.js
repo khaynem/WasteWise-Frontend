@@ -80,7 +80,7 @@ export default function Login() {
             const role = response.data.role;
             const roleRoutes = {
               admin: '/admin/adashboard',
-              user: '/',
+              user: '/', 
               barangay: '/barangay/dashboard',
               business: '/businesses/dashboard',   
               businesses: '/businesses/dashboard',

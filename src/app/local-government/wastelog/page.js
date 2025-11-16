@@ -88,7 +88,7 @@ export default function WasteLogPage() {
       if (!token) return;
 
       const res = await api.get("/api/user/leaderboard", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }, withCredentials: true
       });
 
       const data = res.data;
@@ -161,7 +161,7 @@ export default function WasteLogPage() {
         if (!token) throw new Error("Missing auth token");
 
         const res = await api.get("/api/user/wastelogs", {
-          // headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }, withCredentials: true
         });
         const data = res.data;
 
@@ -214,7 +214,7 @@ export default function WasteLogPage() {
       };
 
       const res = await api.post("/api/user/wastelog", payload, {
-        // headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }, withCredentials: true
       });
 
       const data = res.data;
@@ -278,7 +278,7 @@ export default function WasteLogPage() {
       }
 
       const res = await api.delete(`/api/user/wastelog/${id}`, {
-        // headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` }, withCredentials: true
       });
 
       const data = res.data;

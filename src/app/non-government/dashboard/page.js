@@ -30,10 +30,10 @@ export default function NonGovernmentDashboard() {
 
       try {
         const [wRes, rRes, cRes, lbRes] = await Promise.allSettled([
-          api.get("/api/user/wastelogs", { headers }),
-          api.get("/api/admin/reports", { headers }),
-          api.get("/api/admin/challenges", { headers }),
-          api.get("/api/user/leaderboard", { headers }),
+          api.get("/api/user/wastelogs", { headers, withCredentials: true }),
+          api.get("/api/admin/reports", { headers, withCredentials: true }),
+          api.get("/api/admin/challenges", { headers, withCredentials: true }),
+          api.get("/api/user/leaderboard", { headers, withCredentials: true }),
         ])
 
         let totalWasteLogs = 0
@@ -64,7 +64,7 @@ export default function NonGovernmentDashboard() {
                 0
               if (id && submissions === 0) {
                 try {
-                  const sr = await api.get(`/api/admin/challenges/${id}/submissions`, { headers })
+                  const sr = await api.get(`/api/admin/challenges/${id}/submissions`, { headers, withCredentials: true })
                   const arr = sr.data
                   submissions = Array.isArray(arr) ? arr.length : submissions
                 } catch {}

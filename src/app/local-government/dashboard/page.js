@@ -24,10 +24,10 @@ export default function LocalGovernmentDashboard() {
       const headers = token ? { Authorization: `Bearer ${token}` } : {}
       try {
         const [reportsRes, challengesRes, lbRes, wlAdminRes] = await Promise.allSettled([
-          api.get("/api/admin/reports", { headers }),
-          api.get("/api/admin/challenges", { headers }),
-          api.get("/api/user/leaderboard", { headers }),
-          api.get("/api/admin/wastelogs", { headers }),
+          api.get("/api/admin/reports", { headers, withCredentials: true }),
+          api.get("/api/admin/challenges", { headers, withCredentials: true }),
+          api.get("/api/user/leaderboard", { headers, withCredentials: true }),
+          api.get("/api/admin/wastelogs", { headers, withCredentials: true }),
         ])
 
         let allReports = []
@@ -49,7 +49,7 @@ export default function LocalGovernmentDashboard() {
           totalWasteLogs = wl.length
         } else {
           try {
-            const wlUser = await api.get("/api/user/wastelogs", { headers })
+            const wlUser = await api.get("/api/user/wastelogs", { headers, withCredentials: true })
             const wj = wlUser.data
             const wl = Array.isArray(wj) ? wj : (Array.isArray(wj?.wasteLogs) ? wj.wasteLogs : [])
             totalWasteLogs = wl.length
@@ -79,7 +79,7 @@ export default function LocalGovernmentDashboard() {
               0
             if (id && submissions === 0) {
               try {
-                const subAdmin = await api.get(`/api/admin/challenges/${id}/submissions`, { headers })
+                const subAdmin = await api.get(`/api/admin/challenges/${id}/submissions`, { headers, withCredentials: true })
                 const arr = subAdmin.data
                 submissions = Array.isArray(arr) ? arr.length : submissions
               } catch {}

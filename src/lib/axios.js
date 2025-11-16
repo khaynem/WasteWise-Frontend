@@ -8,10 +8,10 @@ const api = axios.create({
   baseURL: API_HOST,
   timeout: 60000,
   withCredentials: true,
-  // headers: {
-  //   "Content-Type": "application/json",
-  //   Accept: "application/json",
-  // },
+  headers: {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+  },
 });
 
 // Global error toasts (no behavior change, only visual alert)

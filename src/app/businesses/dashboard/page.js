@@ -22,7 +22,7 @@ export default function BarangayDashboard() {
     try {
       const token = getCookie("authToken")
       if (!token) return
-      const res = await api.get("/api/user/leaderboard", { headers: { Authorization: `Bearer ${token}` } })
+      const res = await api.get("/api/user/leaderboard", { headers: { Authorization: `Bearer ${token}`  }, withCredentials: true })
       const data = res.data
       setLeaderboard((data.leaderboard || []).map((entry, i) => ({
         rank: entry.placement ?? i + 1,
@@ -47,7 +47,7 @@ export default function BarangayDashboard() {
       const token = getCookie("authToken")
       const auth = token ? { Authorization: `Bearer ${token}` } : {}
       try {
-        const statsRes = await api.get("/api/barangay/stats", { headers: auth })
+        const statsRes = await api.get("/api/barangay/stats", { headers: auth, withCredentials: true })
         if (mounted) {
           const sj = statsRes.data
           setStats({
@@ -59,9 +59,9 @@ export default function BarangayDashboard() {
       } catch {
         try {
           const [wLogsRes, reportsRes, challengesRes] = await Promise.allSettled([
-            api.get("/api/user/wastelogs", { headers: auth }),
-            api.get("/api/admin/reports", { headers: auth }),
-            api.get("/api/admin/challenges", { headers: auth })
+            api.get("/api/user/wastelogs", { headers: auth, withCredentials: true }),
+            api.get("/api/admin/reports", { headers: auth, withCredentials: true }),
+            api.get("/api/admin/challenges", { headers: auth, withCredentials: true })
           ])
           let totalWasteLogs = 0
           let reportsSubmitted = 0
@@ -84,7 +84,7 @@ export default function BarangayDashboard() {
 
       try {
         // Challenges base list
-        const chRes = await api.get("/api/admin/challenges", { headers: auth })
+        const chRes = await api.get("/api/admin/challenges", { headers: auth, withCredentials: true })
         const cData = chRes.data
         let items = (Array.isArray(cData) ? cData : []).map(c => ({
           id: c._id || c.id || `${c.title}-${Math.random()}`,
@@ -96,7 +96,7 @@ export default function BarangayDashboard() {
         // Fetch per-challenge submissions count
         const counts = await Promise.all(items.map(async ch => {
           try {
-            const r = await api.get(`/api/admin/challenges/${ch.id}/submissions`, { headers: auth })
+            const r = await api.get(`/api/admin/challenges/${ch.id}/submissions`, { headers: auth, withCredentials: true })
             const arr = r.data
             return { id: ch.id, submissions: Array.isArray(arr) ? arr.length : 0 }
           } catch { return { id: ch.id, submissions: 0 } }

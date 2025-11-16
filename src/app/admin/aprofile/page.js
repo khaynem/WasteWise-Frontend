@@ -51,7 +51,7 @@ export default function ProfilePage() {
         const token = getCookie("authToken") || getToken();
         if (!token) throw new Error("Missing auth token");
         const res = await api.get("/api/user/profile", {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: { Authorization: `Bearer ${token}` }, withCredentials: true
         });
         const data = res.data?.user || res.data;
         const info = {
@@ -81,7 +81,7 @@ export default function ProfilePage() {
       const res = await api.patch(
         "/api/user/profile",
         { username },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
       );
       const data = res.data?.user || res.data;
       setProfile((p) => ({ ...p, username: data?.username || username }));
@@ -112,6 +112,7 @@ export default function ProfilePage() {
         { currentPassword, newPassword },
         {
           headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
           timeout: 100000, // 100 seconds timeout
         }
       );

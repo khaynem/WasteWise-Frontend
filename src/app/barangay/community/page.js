@@ -172,7 +172,7 @@ export default function CommunityPage() {
         }
 
         const res = await api.get("/api/listings", {
-          headers: { Authorization: `Bearer ${authToken}` },
+          headers: { Authorization: `Bearer ${authToken}` }, withCredentials: true
         });
         
         console.log("Fetched listings:", res.data);
@@ -244,6 +244,7 @@ export default function CommunityPage() {
                 Authorization: `Bearer ${authToken}`,
                 "Content-Type": "multipart/form-data",
               },
+              withCredentials: true,
             }),
           {
             pending: "Updating listing...",
@@ -280,6 +281,7 @@ export default function CommunityPage() {
         () =>
           api.post("/api/listings", form, {
             headers: { Authorization: `Bearer ${authToken}`, "Content-Type": "multipart/form-data" },
+            withCredentials: true,
           }),
         {
           pending: "Creating listing...",
@@ -307,7 +309,7 @@ export default function CommunityPage() {
       }
 
       const res = await api.get(`/api/listings/${it.id}`, {
-        headers: { Authorization: `Bearer ${authToken}` },
+        headers: { Authorization: `Bearer ${authToken}` }, withCredentials: true
       });
 
       const l = mapServerListing(res.data);
@@ -348,6 +350,7 @@ export default function CommunityPage() {
         () =>
           api.delete(`/api/listings/${id}`, {
             headers: { Authorization: `Bearer ${authToken}` },
+            withCredentials: true,
           }),
         {
           pending: "Deleting listing...",
@@ -390,7 +393,7 @@ export default function CommunityPage() {
       try {
         const ids = listings.map((l) => l.id).join(",");
         const res = await api.get(`/api/listings/metrics?ids=${encodeURIComponent(ids)}`, {
-          headers: { Authorization: `Bearer ${authToken}` },
+          headers: { Authorization: `Bearer ${authToken}` }, withCredentials: true
         });
         const map = res.data || {};
         setListings((prev) =>
@@ -416,7 +419,7 @@ export default function CommunityPage() {
           api.post(
             `/api/listings/${id}/like`,
             {},
-            { headers: { Authorization: `Bearer ${authToken}` } }
+            { headers: { Authorization: `Bearer ${authToken}` }, withCredentials: true }
           ),
         { pending: "Liking...", success: "Liked", error: "Failed to like" }
       );
@@ -459,7 +462,7 @@ export default function CommunityPage() {
           api.post(
             `/api/listings/comment/${listingId}`,
             { comment: text },
-            { headers: { Authorization: `Bearer ${authToken}` } }
+            { headers: { Authorization: `Bearer ${authToken}` }, withCredentials: true }
           ),
         {
           pending: "Posting comment...",
@@ -498,6 +501,7 @@ export default function CommunityPage() {
         () =>
           api.delete(`/api/listings/comment/${commentId}`, {
             headers: { Authorization: `Bearer ${authToken}` },
+            withCredentials: true,
           }),
         {
           pending: "Deleting comment...",
@@ -657,6 +661,7 @@ export default function CommunityPage() {
                 try {
                   const res = await api.get(`/api/listings/comment/${id}`, {
                     headers: { Authorization: `Bearer ${authToken}` },
+                    withCredentials: true,
                   });
                   const arr = Array.isArray(res.data) ? res.data : [];
                   return { id, count: arr.length };
@@ -692,6 +697,7 @@ export default function CommunityPage() {
     try {
       const res = await api.get(`/api/listings/comment/${listingId}`, {
         headers: { Authorization: `Bearer ${authToken}` },
+        withCredentials: true,
       });
       const arr = Array.isArray(res.data) ? res.data.map(mapServerComment) : [];
       setListings(prev =>
