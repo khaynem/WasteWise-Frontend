@@ -9,7 +9,7 @@ import { requireAuth } from "../../../lib/auth"
 export default function NonGovernmentDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState({
-    totalWasteLogs: 0,
+    totalReportsResolved: 0,
     totalReports: 0,
     challengesCount: 0,
   })
@@ -27,18 +27,19 @@ export default function NonGovernmentDashboard() {
       setLoading(true)
 
       try {
-        const [wRes, rRes, cRes, lbRes] = await Promise.allSettled([
-          api.get("/api/user/wastelogs", { withCredentials: true }),
+        const [rRes, cRes, lbRes] = await Promise.allSettled([
           api.get("/api/admin/reports", { withCredentials: true }),
           api.get("/api/admin/challenges", { withCredentials: true }),
           api.get("/api/user/leaderboard", { withCredentials: true }),
         ])
 
-        let totalWasteLogs = 0
-        if (wRes.status === "fulfilled") {
-          const wJson = wRes.value.data
-          const wl = Array.isArray(wJson) ? wJson : (Array.isArray(wJson?.wasteLogs) ? wJson.wasteLogs : [])
-          totalWasteLogs = wl.length
+        let totalReportsResolved = 0
+        if (rRes.status === "fulfilled") {
+          const rJson = rRes.value.data
+          const all = Array.isArray(rJson) ? rJson : (Array.isArray(rJson?.reports) ? rJson.reports : [])
+          totalReportsResolved = all.filter(r => 
+            String(r.reportStatus || r.status || '').toLowerCase() === 'resolved'
+          ).length
         }
 
         let totalReports = 0
@@ -90,12 +91,12 @@ export default function NonGovernmentDashboard() {
         }
 
         if (!mounted) return
-        setStats({ totalWasteLogs, totalReports, challengesCount: items.length })
+        setStats({ totalReportsResolved, totalReports, challengesCount: items.length })
         setChallenges(items)
         setLeaderboard(lb)
       } catch {
         if (!mounted) return
-        setStats({ totalWasteLogs: 0, totalReports: 0, challengesCount: 0 })
+        setStats({ totalReportsResolved: 0, totalReports: 0, challengesCount: 0 })
         setChallenges([])
         setLeaderboard([])
       } finally {
@@ -114,11 +115,11 @@ export default function NonGovernmentDashboard() {
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
             <div className={styles.statIcon} style={{ backgroundColor: "#10b981" }}>
-              <i className="fas fa-database" />
+              <i className="fas fa-check-circle" />
             </div>
             <div className={styles.statContent}>
-              <div className={styles.statTitle}>Total Waste Logs</div>
-              <div className={styles.statNumber}>{stats.totalWasteLogs.toLocaleString()}</div>
+              <div className={styles.statTitle}>Total Reports Resolved</div>
+              <div className={styles.statNumber}>{stats.totalReportsResolved.toLocaleString()}</div>
             </div>
           </div>
 

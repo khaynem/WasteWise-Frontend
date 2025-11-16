@@ -9,7 +9,7 @@ import { toast } from "react-toastify"
 
 export default function BarangayDashboard() {
   const router = useRouter();
-  const [stats, setStats] = useState({ totalWasteLogs: 0, reportsSubmitted: 0, challengesCount: 0 })
+  const [stats, setStats] = useState({ totalReportsResolved: 0, reportsSubmitted: 0, challengesCount: 0 })
   const [leaderboard, setLeaderboard] = useState([])
   const [userRanking, setUserRanking] = useState({ points: 0, rank: "Bronze", placement: null })
   const [challenges, setChallenges] = useState([])
@@ -52,34 +52,33 @@ export default function BarangayDashboard() {
         if (mounted) {
           const sj = statsRes.data
           setStats({
-            totalWasteLogs: sj.totalWasteLogs ?? 0,
+            totalReportsResolved: sj.totalReportsResolved ?? 0,
             reportsSubmitted: sj.reportsSubmitted ?? 0,
             challengesCount: sj.challengesCount ?? 0
           })
         }
       } catch {
         try {
-          const [wLogsRes, reportsRes, challengesRes] = await Promise.allSettled([
-            api.get("/api/user/wastelogs", { withCredentials: true }),
+          const [reportsRes, challengesRes] = await Promise.allSettled([
             api.get("/api/admin/reports", { withCredentials: true }),
             api.get("/api/admin/challenges", { withCredentials: true })
           ])
-          let totalWasteLogs = 0
+          let totalReportsResolved = 0
           let reportsSubmitted = 0
           let challengesCount = 0
-          if (wLogsRes.status === 'fulfilled') {
-            const wJson = wLogsRes.value.data
-            totalWasteLogs = (wJson.wasteLogs || []).length
-          }
           if (reportsRes.status === 'fulfilled') {
             const rJson = reportsRes.value.data
-            reportsSubmitted = Array.isArray(rJson) ? rJson.length : 0
+            const allReports = Array.isArray(rJson) ? rJson : []
+            reportsSubmitted = allReports.length
+            totalReportsResolved = allReports.filter(r => 
+              String(r.reportStatus || r.status || '').toLowerCase() === 'resolved'
+            ).length
           }
           if (challengesRes.status === 'fulfilled') {
             const cJson = challengesRes.value.data
             challengesCount = Array.isArray(cJson) ? cJson.length : 0
           }
-          if (mounted) setStats({ totalWasteLogs, reportsSubmitted, challengesCount })
+          if (mounted) setStats({ totalReportsResolved, reportsSubmitted, challengesCount })
         } catch {}
       }
 
@@ -135,10 +134,10 @@ export default function BarangayDashboard() {
 
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
-            <div className={`${styles.statIcon} ${styles.iconGreen}`}><i className="fas fa-database" /></div>
+            <div className={`${styles.statIcon} ${styles.iconGreen}`}><i className="fas fa-check-circle" /></div>
             <div className={styles.statContent}>
-              <div className={styles.statTitle}>Total Waste Logs</div>
-              <div className={styles.statNumber}>{Number(stats.totalWasteLogs||0).toLocaleString()}</div>
+              <div className={styles.statTitle}>Total Reports Resolved</div>
+              <div className={styles.statNumber}>{Number(stats.totalReportsResolved||0).toLocaleString()}</div>
             </div>
           </div>
           <div className={styles.statCard}>

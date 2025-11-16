@@ -14,7 +14,7 @@ export default function LocalGovernmentDashboard() {
       router.push("/login")
     }
   }, [router])
-  const [stats, setStats] = useState({ totalWasteLogs: 0, totalReports: 0, challengesCount: 0 })
+  const [stats, setStats] = useState({ totalReportsResolved: 0, totalReports: 0, challengesCount: 0 })
   const [leaderboard, setLeaderboard] = useState([])
   const [challengeItems, setChallengeItems] = useState([])
   const [reportsByStatus, setReportsByStatus] = useState([])
@@ -23,37 +23,26 @@ export default function LocalGovernmentDashboard() {
     let mounted = true
     const load = async () => {
       try {
-        const [reportsRes, challengesRes, lbRes, wlAdminRes] = await Promise.allSettled([
+        const [reportsRes, challengesRes, lbRes] = await Promise.allSettled([
           api.get("/api/admin/reports", { withCredentials: true }),
           api.get("/api/admin/challenges", { withCredentials: true }),
           api.get("/api/user/leaderboard", { withCredentials: true }),
-          api.get("/api/admin/wastelogs", { withCredentials: true }),
         ])
 
         let allReports = []
+        let totalReportsResolved = 0
         if (reportsRes.status === "fulfilled") {
           const rj = reportsRes.value.data
           allReports = Array.isArray(rj) ? rj : (Array.isArray(rj?.reports) ? rj.reports : [])
+          totalReportsResolved = allReports.filter(r => 
+            String(r.reportStatus || r.status || '').toLowerCase() === 'resolved'
+          ).length
         }
 
         let baseChallenges = []
         if (challengesRes.status === "fulfilled") {
           const cj = challengesRes.value.data
           baseChallenges = Array.isArray(cj) ? cj : []
-        }
-
-        let totalWasteLogs = 0
-        if (wlAdminRes.status === "fulfilled") {
-          const wj = wlAdminRes.value.data
-          const wl = Array.isArray(wj) ? wj : (Array.isArray(wj?.wasteLogs) ? wj.wasteLogs : [])
-          totalWasteLogs = wl.length
-        } else {
-          try {
-            const wlUser = await api.get("/api/user/wastelogs", { withCredentials: true })
-            const wj = wlUser.data
-            const wl = Array.isArray(wj) ? wj : (Array.isArray(wj?.wasteLogs) ? wj.wasteLogs : [])
-            totalWasteLogs = wl.length
-          } catch {}
         }
 
         let lb = []
@@ -98,13 +87,13 @@ export default function LocalGovernmentDashboard() {
           .sort((a, b) => b.count - a.count)
 
         if (!mounted) return
-        setStats({ totalWasteLogs, totalReports: allReports.length, challengesCount: challengesWithCounts.length })
+        setStats({ totalReportsResolved, totalReports: allReports.length, challengesCount: challengesWithCounts.length })
         setLeaderboard(lb)
         setChallengeItems(challengesWithCounts)
         setReportsByStatus(statusArray)
       } catch {
         if (!mounted) return
-        setStats({ totalWasteLogs: 0, totalReports: 0, challengesCount: 0 })
+        setStats({ totalReportsResolved: 0, totalReports: 0, challengesCount: 0 })
         setLeaderboard([])
         setChallengeItems([])
         setReportsByStatus([])
@@ -151,11 +140,11 @@ export default function LocalGovernmentDashboard() {
         <div className={styles.statsGrid}>
           <div className={styles.statCard}>
             <div className={styles.statIcon} style={{ backgroundColor: '#10b981' }}>
-              <i className="fas fa-database"></i>
+              <i className="fas fa-check-circle"></i>
             </div>
             <div className={styles.statContent}>
-              <div className={styles.statTitle}>Total Waste Logs</div>
-              <div className={styles.statNumber}>{stats.totalWasteLogs.toLocaleString()}</div>
+              <div className={styles.statTitle}>Total Reports Resolved</div>
+              <div className={styles.statNumber}>{stats.totalReportsResolved.toLocaleString()}</div>
             </div>
           </div>
 
