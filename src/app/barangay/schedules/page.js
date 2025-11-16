@@ -5,13 +5,8 @@ import { useState, useEffect } from 'react';
 import api from "../../../lib/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
+import { requireRole } from "../../../lib/auth";
+import { useRouter } from "next/navigation";
 
 function getNextPickupFromDay(dayString) {
   const today = new Date();
@@ -119,21 +114,27 @@ function getNextMonthly(dayName, nth = 1) {
 }
 
 export default function ScheduleManagement() {
+  const router = useRouter();
   const [selectedBarangay, setSelectedBarangay] = useState('');
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      const user = await requireRole(router, 'barangay', '/home');
+      if (!user) toast.error("Barangay access required.");
+    };
+    checkAuthentication();
+  }, [router]);
+
   // Fetch schedules from backend
   useEffect(() => {
     const fetchSchedules = async () => {
-      //const authToken = getCookie("authToken");
       try {
         setLoading(true);
         const response = await api.get("/api/admin/schedules", {
-          headers: {
-            // 'Authorization': `Bearer ${authToken}`,
-          },
+          withCredentials: true
         });
         setSchedules(response.data);
         setError('');
@@ -184,12 +185,6 @@ export default function ScheduleManagement() {
 
   const handleEdit = async (scheduleId, typeId) => {
     try {
-      //const authToken = getCookie("authToken");
-      // if (!authToken) {
-      //   toast.error("Missing auth token. Please sign in again.");
-      //   return;
-      // }
-
       // Find the schedule and type by their IDs
       const schedDoc = schedules.find(s => s._id === scheduleId);
       if (!schedDoc) {
@@ -231,9 +226,7 @@ export default function ScheduleManagement() {
           newDay: trimmed
         },
         {
-          headers: {
-            // Authorization: `Bearer ${authToken}`
-          }
+          withCredentials: true
         }
       );
 

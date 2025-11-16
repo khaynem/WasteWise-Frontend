@@ -4,6 +4,8 @@ import AdminNavBar from "../componentsadmin/adminNavBar";
 import { useState, useEffect, useMemo } from "react";
 import api, { withToast } from "../../../lib/axios";
 import styles from "./acommunity.module.css";
+import { requireAuth } from "../../../lib/auth";
+import { useRouter } from "next/navigation";
 
 const CATEGORIES = ["Furniture", "Decor", "Accessories", "Clothing", "Tools", "Other"];
 const BARANGAYS = [
@@ -25,28 +27,6 @@ const BARANGAYS = [
   "Old Cabalan",
   "New Cabalan",
 ];
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
-
-// Decode user id once for ownership checks
-function getAuthUserId() {
-  try {
-    const t =
-      getCookie("authToken") ||
-      localStorage.getItem("authToken") ||
-      localStorage.getItem("token");
-    if (!t) return null;
-    const p = JSON.parse(atob(t.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-    return p.id || p._id || null;
-  } catch {
-    return null;
-  }
-}
 
 // Map server listing to UI model (include owner id)
 function mapServerListing(l) {
@@ -95,6 +75,14 @@ function mapServerComment(c) {
 }
 
 export default function CommunityPage() {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!requireAuth()) {
+      router.push("/login");
+    }
+  }, [router]);
+
   const [isMobile, setIsMobile] = useState(false);
   const [listings, setListings] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -153,7 +141,8 @@ export default function CommunityPage() {
   const [commentCountsLoaded, setCommentCountsLoaded] = useState(false); // NEW
 
   useEffect(() => {
-    setAuthUserId(getAuthUserId());
+    const userId = requireAuth();
+    setAuthUserId(userId);
   }, []);
 
   useEffect(() => {
@@ -166,14 +155,8 @@ export default function CommunityPage() {
   useEffect(() => {
     const fetchListings = async () => {
       try {
-        const authToken = getCookie("authToken");
-        if (!authToken) {
-          console.warn("No auth token found");
-          return;
-        }
-
         const res = await api.get("/api/listings", {
-          headers: { Authorization: `Bearer ${authToken}` }, withCredentials: true
+          withCredentials: true
         });
         
         console.log("Fetched listings:", res.data);
@@ -215,12 +198,6 @@ export default function CommunityPage() {
     const p = Number(price);
     if (!name || !description || Number.isNaN(p) || p < 0 || !category || !contactNumber) return;
 
-    const authToken = getCookie("authToken");
-    if (!authToken) {
-      console.error("No auth token found");
-      return;
-    }
-
     // Editing existing listing
     if (editingId) {
       try {
@@ -242,7 +219,6 @@ export default function CommunityPage() {
           () =>
             api.patch(`/api/listings/${editingId}`, form, {
               headers: {
-                Authorization: `Bearer ${authToken}`,
                 "Content-Type": "multipart/form-data",
               },
               withCredentials: true
@@ -281,7 +257,7 @@ export default function CommunityPage() {
       const res = await withToast(
         () =>
           api.post("/api/listings", form, {
-            headers: { Authorization: `Bearer ${authToken}`, "Content-Type": "multipart/form-data" },
+            headers: { "Content-Type": "multipart/form-data" },
             withCredentials: true
           }),
         {
@@ -303,14 +279,7 @@ export default function CommunityPage() {
   // Fetch listing by ID and open edit modal
   const handleEdit = async (it) => {
     try {
-      const authToken = getCookie("authToken");
-      if (!authToken) {
-        console.error("No auth token found");
-        return;
-      }
-
       const res = await api.get(`/api/listings/${it.id}`, {
-        headers: { Authorization: `Bearer ${authToken}` },
         withCredentials: true
       });
 
@@ -342,16 +311,10 @@ export default function CommunityPage() {
   };
 
   const handleDelete = async (id) => {
-    const authToken = getCookie("authToken");
-    if (!authToken) {
-      console.error("No auth token");
-      return;
-    }
     try {
       await withToast(
         () =>
           api.delete(`/api/listings/${id}`, {
-            headers: { Authorization: `Bearer ${authToken}` },
             withCredentials: true
           }),
         {
@@ -388,14 +351,13 @@ export default function CommunityPage() {
 
   // Prefetch like metrics for all listings after they load
   useEffect(() => {
-    const authToken = getCookie("authToken");
-    if (!authToken || listings.length === 0) return;
+    if (listings.length === 0) return;
 
     const loadLikeMetrics = async () => {
       try {
         const ids = listings.map((l) => l.id).join(",");
         const res = await api.get(`/api/listings/metrics?ids=${encodeURIComponent(ids)}`, {
-          headers: { Authorization: `Bearer ${authToken}` }, withCredentials: true
+          withCredentials: true
         });
         const map = res.data || {};
         setListings((prev) =>
@@ -413,15 +375,13 @@ export default function CommunityPage() {
 
   // Toggle like via server
   const handleLike = async (id) => {
-    const authToken = getCookie("authToken");
-    if (!authToken) return;
     try {
       const res = await withToast(
         () =>
           api.post(
             `/api/listings/${id}/like`,
             {},
-            { headers: { Authorization: `Bearer ${authToken}` }, withCredentials: true }
+            { withCredentials: true }
           ),
         { pending: "Liking...", success: "Liked", error: "Failed to like" }
       );
@@ -453,18 +413,13 @@ export default function CommunityPage() {
   const handleAddComment = async (listingId) => {
     const text = (commentDrafts[listingId] || "").trim();
     if (!text) return;
-    const authToken = getCookie("authToken");
-    if (!authToken) {
-      console.error("No auth token");
-      return;
-    }
     try {
       const res = await withToast(
         () =>
           api.post(
             `/api/listings/comment/${listingId}`,
             { comment: text },
-            { headers: { Authorization: `Bearer ${authToken}` }, withCredentials: true }
+            { withCredentials: true }
           ),
         {
           pending: "Posting comment...",
@@ -496,13 +451,10 @@ export default function CommunityPage() {
   };
 
   const handleDeleteComment = async (listingId, commentId) => {
-    const authToken = getCookie("authToken");
-    if (!authToken) return;
     try {
       await withToast(
         () =>
           api.delete(`/api/listings/comment/${commentId}`, {
-            headers: { Authorization: `Bearer ${authToken}` },
             withCredentials: true
           }),
         {
@@ -647,8 +599,6 @@ export default function CommunityPage() {
   // After listings are first loaded, fetch counts (without waiting for user toggle)
   useEffect(() => {
     if (!listings.length || commentCountsLoaded) return;
-    const authToken = getCookie("authToken");
-    if (!authToken) return;
 
     const loadCounts = async () => {
       try {
@@ -662,7 +612,6 @@ export default function CommunityPage() {
               slice.map(async (id) => {
                 try {
                   const res = await api.get(`/api/listings/comment/${id}`, {
-                    headers: { Authorization: `Bearer ${authToken}` },
                     withCredentials: true
                   });
                   const arr = Array.isArray(res.data) ? res.data : [];
@@ -693,12 +642,9 @@ export default function CommunityPage() {
   // fetchComments (unchanged except ensures commentsCount stays accurate)
   const fetchComments = async (listingId) => {
     if (!listingId) return;
-    const authToken = getCookie("authToken");
-    if (!authToken) return;
     setLoadingComments(s => new Set(s).add(listingId));
     try {
       const res = await api.get(`/api/listings/comment/${listingId}`, {
-        headers: { Authorization: `Bearer ${authToken}` },
         withCredentials: true
       });
       const arr = Array.isArray(res.data) ? res.data.map(mapServerComment) : [];

@@ -8,15 +8,11 @@ import dynamic from "next/dynamic";
 const MapPreview = dynamic(() => import("../../components/MapPreview"), { ssr: false });
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
+import { requireRole } from "../../../lib/auth";
+import { useRouter } from "next/navigation";
 
 export default function ViolationReports() {
+  const router = useRouter();
   const [filter, setFilter] = useState('most-recent');
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -24,19 +20,24 @@ export default function ViolationReports() {
   const [error, setError] = useState("");
   const [openMapId, setOpenMapId] = useState(null);
 
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      const user = await requireRole(router, 'admin', '/home');
+      if (!user) toast.error("Admin access required.");
+    };
+    checkAuthentication();
+  }, [router]);
+
   // Fetch reports from backend on component mount
   useEffect(() => {
     fetchReports();
   }, []);
 
   const fetchReports = async () => {
-    //const authToken = getCookie("authToken");
     try {
       setLoading(true);
       const response = await api.get("/api/admin/reports", {
-        headers: {
-          // 'Authorization': `Bearer ${authToken}`,
-        },
+        withCredentials: true
       });
       setReports(response.data);
       setError("");
@@ -48,12 +49,9 @@ export default function ViolationReports() {
   };
 
   const handleMarkResolved = async (reportId) => {
-    //const authToken = getCookie("authToken");
     try {
       await api.patch(`/api/admin/reports/${reportId}/manage`, {}, {
-        headers: { 
-          // Authorization: `Bearer ${authToken}`
-         }
+        withCredentials: true
       });
       setReports(prev => prev.map(r => r._id === reportId ? { ...r, reportStatus: 'resolved' } : r));
       toast.success("Report marked as resolved.");
@@ -72,14 +70,11 @@ export default function ViolationReports() {
     }
     const qs = params.toString() ? `?${params.toString()}` : '';
 
-    //const authToken = getCookie("authToken");
     try {
       setDownloading(true);
       const resp = await api.get(`/api/admin/reports/download/pdf${qs}`, {
         responseType: 'blob',
-        headers: { 
-          // Authorization: `Bearer ${authToken}`
-         }
+        withCredentials: true
       });
 
       const suffix = params.get('status') ? `-${params.get('status')}` : '';

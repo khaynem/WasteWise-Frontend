@@ -2,22 +2,12 @@
 
 import AdminNavBar from "../componentsadmin/adminNavBar";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./aprofile.module.css";
 import api from "../../../lib/axios";
+import { requireRole, getCurrentUser } from "../../../lib/auth";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-  return null;
-}
-const getToken = () =>
-  localStorage.getItem("token") ||
-  localStorage.getItem("authToken") ||
-  localStorage.getItem("accessToken") ||
-  localStorage.getItem("jwt");
 
 function formatDate(d) {
   try {
@@ -28,6 +18,7 @@ function formatDate(d) {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [changingPw, setChangingPw] = useState(false);
@@ -48,40 +39,43 @@ export default function ProfilePage() {
   useEffect(() => {
     const load = async () => {
       try {
-        const token = getCookie("authToken") || getToken();
-        if (!token) throw new Error("Missing auth token");
+        const user = await requireRole(router, 'admin', '/home');
+        if (!user) {
+          toast.error("Admin access required.");
+          return;
+        }
+
         const res = await api.get("/api/user/profile", {
-          headers: { Authorization: `Bearer ${token}` }, withCredentials: true
+          withCredentials: true
         });
         const data = res.data?.user || res.data;
         const info = {
-          username: data?.username || "",
-          email: data?.email || "",
-          role: data?.role || "user",
-          createdAt: data?.createdAt || data?.dateJoined || "",
+          username: data?.username || user.username || "",
+          email: data?.email || user.email || "",
+          role: data?.role || user.role || "admin",
+          createdAt: data?.createdAt || data?.dateJoined || user.joinDate || "",
         };
         setProfile(info);
         setUsername(info.username);
-      } catch {
+      } catch (error) {
+        console.error('[Admin Profile] Load error:', error);
         toast.error("Failed to load profile.");
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, []);
+  }, [router]);
 
   const handleSaveProfile = async (e) => {
     e.preventDefault();
     if (!username || username === profile.username) return;
     try {
       setSaving(true);
-      const token = getCookie("authToken") || getToken();
-      if (!token) throw new Error("Missing auth token");
       const res = await api.patch(
         "/api/user/profile",
         { username },
-        { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
+        { withCredentials: true }
       );
       const data = res.data?.user || res.data;
       setProfile((p) => ({ ...p, username: data?.username || username }));
@@ -105,13 +99,10 @@ export default function ProfilePage() {
     }
     try {
       setChangingPw(true);
-      const token = getCookie("authToken") || getToken();
-      if (!token) throw new Error("Missing auth token");
       await api.patch(
         "/api/user/profile/password",
         { currentPassword, newPassword },
         {
-          headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
           timeout: 100000, // 100 seconds timeout
         }

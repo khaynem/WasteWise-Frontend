@@ -7,45 +7,11 @@ const MapPreview = dynamic(() => import("./components/MapPreview"), { ssr: false
 import Link from "next/link";
 import { useMemo } from "react";
 import api from "../lib/axios";
+import { requireAuth } from "../lib/auth";
 import { toast } from "react-toastify"; 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import BotpressWidget from "./components/BotpressWidget";
-
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
-
-// JWT helpers
-function parseJwt(token) {
-  try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const json = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(json);
-  } catch {
-    return null;
-  }
-}
-
-function isTokenExpired(token) {
-  const payload = parseJwt(token);
-  if (!payload?.exp) return true;
-  return Date.now() >= payload.exp * 1000;
-}
-
-function clearAuthCookie() {
-  document.cookie = "authToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
-}
 
 import {useRouter} from 'next/navigation';
 import { getDeviceLocation } from "./utils/location";
@@ -53,13 +19,12 @@ import { locations as dataset } from "../data/locations.js";
 
 // Fetch schedules from backend
 const fetchSchedules = async () => {
-  //const authToken = getCookie("authToken");
   try {
     const response = await api.get("/api/user/schedules", {
-      headers: {
-        // Authorization: `Bearer ${authToken}`,
-      },
+      withCredentials: true
     });
+      // },
+    // });
     console.log("Fetched schedules:", response.data);
     return response.data;
   } catch (error) {
@@ -224,27 +189,13 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    const token = getCookie("authToken");
-    if (!token) {
-      router.replace("/home");
-      toast.error("Please sign in to continue.");
-      return;
-    }
-    if (isTokenExpired(token)) {
-      clearAuthCookie();
-      toast.error("Session expired. Please sign in again.");
-      router.replace("/home");
-      return;
-    }
-    const msLeft = (parseJwt(token)?.exp || 0) * 1000 - Date.now();
-    if (msLeft > 0) {
-      const t = setTimeout(() => {
-        clearAuthCookie();
-        toast.error("Session expired. Please sign in again.");
-        router.replace("/home");
-      }, msLeft);
-      return () => clearTimeout(t);
-    }
+    const checkAuthentication = async () => {
+      const user = await requireAuth(router, '/home');
+      if (!user) {
+        toast.error("Please sign in to continue.");
+      }
+    };
+    checkAuthentication();
   }, [router]);
 
   // Auto-populate location from device on mount
@@ -317,14 +268,7 @@ export default function Page() {
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
-    const authToken = getCookie("authToken");
-    if (!authToken || isTokenExpired(authToken)) {
-      clearAuthCookie();
-      toast.error("Session expired. Please sign in again.");
-      router.replace("/home");
-      setLoading(false);
-      return;
-    }
+    
     try {
       const formData = new FormData();
       formData.append("title", title);
@@ -337,9 +281,8 @@ export default function Page() {
       if (image) formData.append("image", image);
 
       const response = await api.post("/api/user/report", formData, {
-        headers: { "Content-Type": "multipart/form-data", 
-          // Authorization: `Bearer ${authToken}` 
-        },
+        headers: { "Content-Type": "multipart/form-data" },
+        withCredentials: true
       });
 
       toast.success("Report submitted successfully.");

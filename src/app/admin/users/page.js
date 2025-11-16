@@ -6,13 +6,8 @@ import styles from './users.module.css';
 import api from "../../../lib/axios"; 
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
+import { requireRole } from "../../../lib/auth";
+import { useRouter } from "next/navigation";
 
 function formatDate(dateString) {
   if (!dateString) return "—";
@@ -26,6 +21,7 @@ function formatDate(dateString) {
 }
 
 export default function UsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -40,14 +36,19 @@ export default function UsersPage() {
   
   const ROLE_OPTIONS = ['user', 'admin', 'barangay', 'business', 'non-government', 'local-government'];
 
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      const user = await requireRole(router, 'admin', '/home');
+      if (!user) toast.error("Admin access required.");
+    };
+    checkAuthentication();
+  }, [router]);
+
   // Fetch users from backend
   const fetchUsers = async () => {
-    //const authToken = getCookie("authToken");
     try {
       const response = await api.get("/api/admin/users", {
-        headers: {
-          // 'Authorization': `Bearer ${authToken}`,
-        },
+        withCredentials: true
       });
       setUsers(response.data);
       setFilteredUsers(response.data);
@@ -83,7 +84,6 @@ export default function UsersPage() {
   // Replace mock user actions with API calls
   const handleConfirmAction = async () => {
     if (selectedAction && selectedUser) {
-      //const authToken = getCookie("authToken");
       try {
         let endpoint = "";
         let method = "patch";
@@ -102,9 +102,7 @@ export default function UsersPage() {
         }
         if (endpoint) {
           await api[method](endpoint, {
-            headers: {
-              // 'Authorization': `Bearer ${authToken}`,
-            },
+            withCredentials: true
           });
           fetchUsers();
           const verb =

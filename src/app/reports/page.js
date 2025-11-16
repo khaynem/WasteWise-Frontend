@@ -3,19 +3,14 @@ import dynamic from "next/dynamic"; //
 const MapInput = dynamic(() => import("../components/mapInput"), { ssr: false });
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import api from "../../lib/axios";
 import styles from "./reports.module.css";
 import { getDeviceLocation } from "../utils/location";
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
+import { requireAuth } from "../../lib/auth";
 
 
 export default function ReportsPage() {
@@ -45,14 +40,22 @@ export default function ReportsPage() {
   const handleDragLeave = (e) => { e.preventDefault(); setIsDragging(false); };
   const handleDrop = (e) => { setIsDragging(false); handleImageBoxDrop(e); };
 
+  const router = useRouter();
+
+  // Auth check
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      const user = await requireAuth(router, '/home');
+      if (!user) toast.error("Please sign in to continue.");
+    };
+    checkAuthentication();
+  }, [router]);
+
   useEffect(() => {
     async function fetchReports() {
-      //const authToken = getCookie("authToken");
       try {
         const response = await api.get("/api/user/reports", {
-          headers: {
-            // 'Authorization': `Bearer ${authToken}`,
-          },
+          withCredentials: true,
         });
         // Sort reports by date, most recent first
         const sortedReports = response.data.sort(
@@ -167,8 +170,8 @@ export default function ReportsPage() {
       const response = await api.post("/api/user/report", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
-          // Authorization: `Bearer ${authToken}`,
         },
+        withCredentials: true,
       });
 
       toast.success("Report submitted successfully.");
@@ -287,9 +290,9 @@ export default function ReportsPage() {
       // Use PATCH to match backend route and param name :id
       const { data } = await api.patch(`/api/user/report/${reportId}`, formData, {
         headers: {
-          // Authorization: `Bearer ${authToken}`,
           "Content-Type": "multipart/form-data",
         },
+        withCredentials: true,
       });
 
       // Prefer server response; fallback to local edits and edited date

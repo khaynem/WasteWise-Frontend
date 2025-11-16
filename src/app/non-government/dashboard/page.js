@@ -2,16 +2,12 @@
 
 import styles from "./non-government.module.css"
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import api from "../../../lib/axios"
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${name}=`)
-  if (parts.length === 2) return parts.pop()?.split(";").shift() || null
-  return null
-}
+import { requireAuth } from "../../../lib/auth"
 
 export default function NonGovernmentDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState({
     totalWasteLogs: 0,
     totalReports: 0,
@@ -22,18 +18,20 @@ export default function NonGovernmentDashboard() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    requireAuth(router);
+  }, [router]);
+
+  useEffect(() => {
     let mounted = true
     async function load() {
       setLoading(true)
-      const token = getCookie("authToken")
-      const headers = token ? { Authorization: `Bearer ${token}` } : {}
 
       try {
         const [wRes, rRes, cRes, lbRes] = await Promise.allSettled([
-          api.get("/api/user/wastelogs", { headers, withCredentials: true }),
-          api.get("/api/admin/reports", { headers, withCredentials: true }),
-          api.get("/api/admin/challenges", { headers, withCredentials: true }),
-          api.get("/api/user/leaderboard", { headers, withCredentials: true }),
+          api.get("/api/user/wastelogs", { withCredentials: true }),
+          api.get("/api/admin/reports", { withCredentials: true }),
+          api.get("/api/admin/challenges", { withCredentials: true }),
+          api.get("/api/user/leaderboard", { withCredentials: true }),
         ])
 
         let totalWasteLogs = 0
@@ -64,7 +62,7 @@ export default function NonGovernmentDashboard() {
                 0
               if (id && submissions === 0) {
                 try {
-                  const sr = await api.get(`/api/admin/challenges/${id}/submissions`, { headers, withCredentials: true })
+                  const sr = await api.get(`/api/admin/challenges/${id}/submissions`, { withCredentials: true })
                   const arr = sr.data
                   submissions = Array.isArray(arr) ? arr.length : submissions
                 } catch {}

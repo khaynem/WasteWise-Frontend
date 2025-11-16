@@ -6,6 +6,7 @@ import Link from 'next/link';
 import styles from './login.module.css';
 import TermsModal from '../components/TermsModal';
 import api from '../../lib/axios';
+import { clearAuthCache } from '../../lib/auth';
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -76,6 +77,9 @@ export default function Login() {
           }, { withCredentials: true });
 
           if (response.data.code === 200) {
+            // Clear auth cache to force fresh check on next page
+            clearAuthCache();
+            
             toast.success("Signed in successfully.");
             const role = response.data.role;
             const roleRoutes = {

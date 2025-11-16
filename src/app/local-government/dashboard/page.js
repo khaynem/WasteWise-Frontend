@@ -3,15 +3,17 @@
 import styles from './local-government.module.css'
 import { useEffect, useMemo, useState } from 'react'
 import api from "../../../lib/axios"
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`
-  const parts = value.split(`; ${name}=`)
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null
-  return null
-}
+import { requireAuth } from "../../../lib/auth"
+import { useRouter } from "next/navigation"
 
 export default function LocalGovernmentDashboard() {
+  const router = useRouter()
+
+  useEffect(() => {
+    if (!requireAuth()) {
+      router.push("/login")
+    }
+  }, [router])
   const [stats, setStats] = useState({ totalWasteLogs: 0, totalReports: 0, challengesCount: 0 })
   const [leaderboard, setLeaderboard] = useState([])
   const [challengeItems, setChallengeItems] = useState([])
@@ -20,14 +22,12 @@ export default function LocalGovernmentDashboard() {
   useEffect(() => {
     let mounted = true
     const load = async () => {
-      const token = getCookie("authToken")
-      const headers = token ? { Authorization: `Bearer ${token}` } : {}
       try {
         const [reportsRes, challengesRes, lbRes, wlAdminRes] = await Promise.allSettled([
-          api.get("/api/admin/reports", { headers, withCredentials: true }),
-          api.get("/api/admin/challenges", { headers, withCredentials: true }),
-          api.get("/api/user/leaderboard", { headers, withCredentials: true }),
-          api.get("/api/admin/wastelogs", { headers, withCredentials: true }),
+          api.get("/api/admin/reports", { withCredentials: true }),
+          api.get("/api/admin/challenges", { withCredentials: true }),
+          api.get("/api/user/leaderboard", { withCredentials: true }),
+          api.get("/api/admin/wastelogs", { withCredentials: true }),
         ])
 
         let allReports = []
@@ -49,7 +49,7 @@ export default function LocalGovernmentDashboard() {
           totalWasteLogs = wl.length
         } else {
           try {
-            const wlUser = await api.get("/api/user/wastelogs", { headers, withCredentials: true })
+            const wlUser = await api.get("/api/user/wastelogs", { withCredentials: true })
             const wj = wlUser.data
             const wl = Array.isArray(wj) ? wj : (Array.isArray(wj?.wasteLogs) ? wj.wasteLogs : [])
             totalWasteLogs = wl.length
@@ -79,7 +79,7 @@ export default function LocalGovernmentDashboard() {
               0
             if (id && submissions === 0) {
               try {
-                const subAdmin = await api.get(`/api/admin/challenges/${id}/submissions`, { headers, withCredentials: true })
+                const subAdmin = await api.get(`/api/admin/challenges/${id}/submissions`, { withCredentials: true })
                 const arr = subAdmin.data
                 submissions = Array.isArray(arr) ? arr.length : submissions
               } catch {}

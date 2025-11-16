@@ -2,24 +2,17 @@
 
 import api from "../../lib/axios";
 import { useState, useMemo, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./schedule.module.css";
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
+import { requireAuth } from "../../lib/auth";
+import { toast } from "react-toastify";
 
 
 // Fetch schedules from backend
 const fetchSchedules = async () => {
-  //const authToken = getCookie("authToken");
   try {
     const response = await api.get("/api/user/schedules", {
-      headers: {
-        // Authorization: `Bearer ${authToken}`,
-      },
+      withCredentials: true,
     });
     console.log("Fetched schedules:", response.data);
     return response.data;
@@ -174,6 +167,16 @@ export default function SchedulesPage() {
   const [loading, setLoading] = useState(true);
 
   const filterRef = useRef(null);
+  const router = useRouter();
+
+  // Auth check
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      const user = await requireAuth(router, '/home');
+      if (!user) toast.error("Please sign in to continue.");
+    };
+    checkAuthentication();
+  }, [router]);
 
   // Fetch schedules on component mount
   useEffect(() => {

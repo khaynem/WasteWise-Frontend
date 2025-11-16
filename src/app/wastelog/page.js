@@ -1,18 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./wastelog.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import Chart from "chart.js/auto";
 import api from "../../lib/axios";
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
+import { requireAuth } from "../../lib/auth";
 
 const CATEGORIES = [
   { value: "Plastic", color: "#4CAF50" },
@@ -31,12 +26,6 @@ const UNITS = [
   { value: "L", label: "L" },
   { value: "m³", label: "m³" },
 ];
-
-const getToken = () =>
-  localStorage.getItem("token") ||
-  localStorage.getItem("authToken") ||
-  localStorage.getItem("accessToken") ||
-  localStorage.getItem("jwt");
 
 const CHART_LABELS = ["Plastic", "Paper", "Food", "Glass", "Metal", "E-Waste"];
 const SAMPLE_DATA = [12, 8, 15, 5, 4, 3];
@@ -74,6 +63,17 @@ export default function WasteLogPage() {
   const chartCanvasRef = useRef(null);
   const chartRef = useRef(null);
 
+  const router = useRouter();
+
+  // Auth check
+  useEffect(() => {
+    const checkAuthentication = async () => {
+      const user = await requireAuth(router, '/home');
+      if (!user) toast.error("Please sign in to continue.");
+    };
+    checkAuthentication();
+  }, [router]);
+
   useEffect(() => {
     const update = () => setIsMobile(window.innerWidth <= 768);
     update();
@@ -84,11 +84,8 @@ export default function WasteLogPage() {
   // Create a helper function to fetch leaderboard
   const fetchLeaderboard = async () => {
     try {
-      const token = getCookie("authToken") || getToken();
-      if (!token) return;
-
       const res = await api.get("/api/user/leaderboard", {
-        headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
       });
 
       const data = res.data;
@@ -157,11 +154,8 @@ export default function WasteLogPage() {
   useEffect(() => {
     const fetchLogs = async () => {
       try {
-        const token = getCookie("authToken") || getToken();
-        if (!token) throw new Error("Missing auth token");
-
         const res = await api.get("/api/user/wastelogs", {
-          // headers: { Authorization: `Bearer ${token}` },
+          withCredentials: true,
         });
         const data = res.data;
 
@@ -200,12 +194,6 @@ export default function WasteLogPage() {
     }
 
     try {
-      const token = getCookie("authToken") || getToken();
-      if (!token) {
-        toast.error("Not authenticated.");
-        return;
-      }
-
       const payload = {
         wasteType: String(type),
         quantity: String(q),
@@ -214,7 +202,7 @@ export default function WasteLogPage() {
       };
 
       const res = await api.post("/api/user/wastelog", payload, {
-        // headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
       });
 
       const data = res.data;
@@ -271,14 +259,8 @@ export default function WasteLogPage() {
     }
 
     try {
-      const token = getCookie("authToken") || getToken();
-      if (!token) {
-        toast.error("Not authenticated.");
-        return;
-      }
-
       const res = await api.delete(`/api/user/wastelog/${id}`, {
-        // headers: { Authorization: `Bearer ${token}` },
+        withCredentials: true,
       });
 
       const data = res.data;

@@ -1,30 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./challenges.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import api from "../../lib/axios";
-
-function getCookie(name) {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop()?.split(";").shift() || null;
-    return null;
-}
-function getToken() {
-    try {
-        return (
-            getCookie("authToken") ||
-            localStorage.getItem("token") ||
-            localStorage.getItem("authToken") ||
-            localStorage.getItem("accessToken") ||
-            localStorage.getItem("jwt")
-        );
-    } catch {
-        return getCookie("authToken");
-    }
-}
+import { requireAuth } from "../../lib/auth";
 
 export default function ChallengesPage() {
     const [challenges, setChallenges] = useState([]);
@@ -42,14 +24,24 @@ export default function ChallengesPage() {
 
     const [userRanking, setUserRanking] = useState({ points: 0, rank: "Bronze", placement: null });
 
+    const router = useRouter();
+
+    // Auth check
+    useEffect(() => {
+        const checkAuthentication = async () => {
+            const user = await requireAuth(router, '/home');
+            if (!user) toast.error("Please sign in to continue.");
+        };
+        checkAuthentication();
+    }, [router]);
+
     // Load challenges from backend
     useEffect(() => {
         const load = async () => {
             try {
                 setLoading(true);
-                const token = getToken();
                 const res = await api.get("/api/user/challenges", {
-                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    withCredentials: true,
                 });
                 const data = res.data;
                 const items = (Array.isArray(data) ? data : []).map((c) => ({
@@ -82,10 +74,8 @@ export default function ChallengesPage() {
     useEffect(() => {
         const fetchUserRanking = async () => {
             try {
-                const token = getToken();
-                if (!token) return;
                 const res = await api.get("/api/user/leaderboard", {
-                    headers: { Authorization: `Bearer ${token}` },
+                    withCredentials: true,
                 });
                 const data = res.data;
 
@@ -152,7 +142,6 @@ export default function ChallengesPage() {
 
         try {
             setIsSubmitting(true);
-            const token = getToken();
             const form = new FormData();
             form.append("image", submissionImage);
             form.append("description", submissionText.trim());
@@ -161,7 +150,7 @@ export default function ChallengesPage() {
                 `/api/user/challenges/submit/${selected.id}`,
                 form,
                 {
-                    headers: token ? { Authorization: `Bearer ${token}` } : {},
+                    withCredentials: true,
                 }
             );
 

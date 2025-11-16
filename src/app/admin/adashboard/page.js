@@ -4,15 +4,12 @@ import AdminNavBar from "../componentsadmin/adminNavBar";
 import styles from './adashboard.module.css';
 import { useEffect, useState } from "react";
 import api from "../../../lib/axios";
-
-function getCookie(name) {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-}
+import { requireRole } from "../../../lib/auth";
+import { useRouter } from "next/navigation";
+import { toast } from "react-toastify";
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [reportTitles, setReportTitles] = useState([]);
   const [stats, setStats] = useState({
     totalReports: 0,
@@ -23,13 +20,18 @@ export default function AdminDashboard() {
   const [recentActivities, setRecentActivities] = useState([]);
 
   useEffect(() => {
+    const checkAuthentication = async () => {
+      const user = await requireRole(router, 'admin', '/home');
+      if (!user) toast.error("Admin access required.");
+    };
+    checkAuthentication();
+  }, [router]);
+
+  useEffect(() => {
     const fetchReports = async () => {
-      //const authToken = getCookie("authToken");
       try {
         const response = await api.get("/api/admin/reports", {
-          headers: {
-            // 'Authorization': `Bearer ${authToken}`,
-          },
+          withCredentials: true
         });
         const reports = response.data;
 
