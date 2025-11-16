@@ -112,9 +112,11 @@ export default function BarangayDashboard() {
       } catch {}
 
       try {
+        // run your data fetches here
         await fetchLeaderboard()
-      } catch {}
-      } catch {} finally {
+      } catch (err) {
+        console.error('Failed to load leaderboard', err)
+      } finally {
         if (mounted) setLoading(false)
       }
     }
