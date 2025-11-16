@@ -6,8 +6,6 @@ import api from "../../../lib/axios";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);

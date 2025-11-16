@@ -4,8 +4,7 @@ import { useState, useEffect } from "react";
 import styles from "./challenges.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import api from "../../lib/axios";
 
 function getCookie(name) {
     const value = `; ${document.cookie}`;
@@ -49,11 +48,10 @@ export default function ChallengesPage() {
             try {
                 setLoading(true);
                 const token = getToken();
-                const res = await fetch(`${API_BASE}/api/user/challenges`, {
+                const res = await api.get("/api/user/challenges", {
                     headers: token ? { Authorization: `Bearer ${token}` } : {},
                 });
-                if (!res.ok) throw new Error("Failed to load");
-                const data = await res.json();
+                const data = res.data;
                 const items = (Array.isArray(data) ? data : []).map((c) => ({
                     id: c._id || c.id,
                     title: c.title,
@@ -86,11 +84,10 @@ export default function ChallengesPage() {
             try {
                 const token = getToken();
                 if (!token) return;
-                const res = await fetch(`${API_BASE}/api/user/leaderboard`, {
+                const res = await api.get("/api/user/leaderboard", {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-                if (!res.ok) throw new Error("Leaderboard fetch failed");
-                const data = await res.json();
+                const data = res.data;
 
                 const up = data?.userPlacement;
                 setUserRanking({
@@ -160,21 +157,15 @@ export default function ChallengesPage() {
             form.append("image", submissionImage);
             form.append("description", submissionText.trim());
 
-            const res = await fetch(
-                `${API_BASE}/api/user/challenges/submit/${selected.id}`,
+            const res = await api.post(
+                `/api/user/challenges/submit/${selected.id}`,
+                form,
                 {
-                    method: "POST",
                     headers: token ? { Authorization: `Bearer ${token}` } : {},
-                    body: form,
                 }
             );
 
-            if (!res.ok) {
-                const j = await res.json().catch(() => ({}));
-                throw new Error(j.message || "Submit failed");
-            }
-
-            const data = await res.json();
+            const data = res.data;
 
             // Update ranking from response
             if (data.ranking) {

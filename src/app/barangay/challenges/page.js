@@ -4,8 +4,7 @@ import { useEffect, useState } from "react";
 import styles from "./challenges.module.css";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+import api from "../../../lib/axios";
 
 function getCookie(name) {
   const value = `; ${document.cookie}`;
@@ -49,11 +48,10 @@ export default function AdminChallengesPage() {
       try {
         setLoading(true);
         const token = getCookie("authToken");
-        const res = await fetch(`${API_BASE}/api/admin/challenges`, {
+        const res = await api.get("/api/admin/challenges", {
           headers: { Authorization: `Bearer ${token}` },
         });
-        if (!res.ok) throw new Error("Failed");
-        const data = await res.json();
+        const data = res.data;
         const items = (Array.isArray(data) ? data : []).map((c) => ({
           id: c._id || c.id,
           title: c.title,
@@ -113,21 +111,17 @@ export default function AdminChallengesPage() {
 
     try {
       const token = getCookie("authToken");
-      const res = await fetch(`${API_BASE}/api/admin/challenges`, {
-        method: "POST",
+      const res = await api.post("/api/admin/challenges", {
+        title: title.trim(),
+        description: description.trim(),
+        instructions: instructionsPayload,
+        points: pts,
+      }, {
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          title: title.trim(),
-          description: description.trim(),
-          instructions: instructionsPayload,
-          points: pts,
-        }),
       });
-      if (!res.ok) throw new Error("Create failed");
-      const c = await res.json();
+      const c = res.data;
       const item = {
         id: c._id || `${Date.now()}`,
         title: c.title,
@@ -156,11 +150,9 @@ export default function AdminChallengesPage() {
     setDeleting(true);
     try {
       const token = getCookie("authToken");
-      const res = await fetch(`${API_BASE}/api/admin/challenges/${deleteTarget.id}`, {
-        method: "DELETE",
+      await api.delete(`/api/admin/challenges/${deleteTarget.id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Delete failed");
       setChallenges((prev) => prev.filter((c) => c.id !== deleteTarget.id));
       if (selected?.id === deleteTarget.id) {
         setDetailOpen(false);
@@ -181,11 +173,10 @@ export default function AdminChallengesPage() {
       setSubsLoading(true);
       setSubsError("");
       const token = getCookie("authToken");
-      const res = await fetch(`${API_BASE}/api/admin/challenges/${challengeId}/submissions`, {
+      const res = await api.get(`/api/admin/challenges/${challengeId}/submissions`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Failed to load submissions");
-      const data = await res.json();
+      const data = res.data;
       const items = (Array.isArray(data) ? data : []).map(s => ({
         id: s._id || `${s.userId}-${s.submittedAt}`,
         username: s.username || "User",

@@ -2,8 +2,7 @@
 
 import styles from './barangay.module.css'
 import { useMemo, useState, useEffect } from 'react'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+import api from "../../../lib/axios"
 
 function getCookie(name) {
   const value = `; ${document.cookie}`
@@ -23,9 +22,8 @@ export default function BarangayDashboard() {
     try {
       const token = getCookie("authToken")
       if (!token) return
-      const res = await fetch(`${API_BASE}/api/user/leaderboard`, { headers: { Authorization: `Bearer ${token}` } })
-      if (!res.ok) return
-      const data = await res.json()
+      const res = await api.get("/api/user/leaderboard", { headers: { Authorization: `Bearer ${token}` } })
+      const data = res.data
       setLeaderboard((data.leaderboard || []).map((entry, i) => ({
         rank: entry.placement ?? i + 1,
         name: entry.user?.username || entry.username || "Anonymous",
@@ -49,71 +47,73 @@ export default function BarangayDashboard() {
       const token = getCookie("authToken")
       const auth = token ? { Authorization: `Bearer ${token}` } : {}
       try {
-        const statsRes = await fetch(`${API_BASE}/api/barangay/stats`, { headers: auth })
-        if (statsRes.ok) {
-          const sj = await statsRes.json()
-          if (mounted) {
-            setStats({
-              totalWasteLogs: sj.totalWasteLogs ?? 0,
-              reportsSubmitted: sj.reportsSubmitted ?? 0,
-              challengesCount: sj.challengesCount ?? 0
-            })
-          }
-        } else {
+        const statsRes = await api.get("/api/barangay/stats", { headers: auth })
+        if (mounted) {
+          const sj = statsRes.data
+          setStats({
+            totalWasteLogs: sj.totalWasteLogs ?? 0,
+            reportsSubmitted: sj.reportsSubmitted ?? 0,
+            challengesCount: sj.challengesCount ?? 0
+          })
+        }
+      } catch {
+        try {
           const [wLogsRes, reportsRes, challengesRes] = await Promise.allSettled([
-            fetch(`${API_BASE}/api/user/wastelogs`, { headers: auth }),
-            fetch(`${API_BASE}/api/admin/reports`, { headers: auth }),
-            fetch(`${API_BASE}/api/admin/challenges`, { headers: auth })
+            api.get("/api/user/wastelogs", { headers: auth }),
+            api.get("/api/admin/reports", { headers: auth }),
+            api.get("/api/admin/challenges", { headers: auth })
           ])
           let totalWasteLogs = 0
           let reportsSubmitted = 0
           let challengesCount = 0
-          if (wLogsRes.status === 'fulfilled' && wLogsRes.value.ok) {
-            const wJson = await wLogsRes.value.json()
+          if (wLogsRes.status === 'fulfilled') {
+            const wJson = wLogsRes.value.data
             totalWasteLogs = (wJson.wasteLogs || []).length
           }
-          if (reportsRes.status === 'fulfilled' && reportsRes.value.ok) {
-            const rJson = await reportsRes.value.json()
+          if (reportsRes.status === 'fulfilled') {
+            const rJson = reportsRes.value.data
             reportsSubmitted = Array.isArray(rJson) ? rJson.length : 0
           }
-          if (challengesRes.status === 'fulfilled' && challengesRes.value.ok) {
-            const cJson = await challengesRes.value.json()
+          if (challengesRes.status === 'fulfilled') {
+            const cJson = challengesRes.value.data
             challengesCount = Array.isArray(cJson) ? cJson.length : 0
           }
           if (mounted) setStats({ totalWasteLogs, reportsSubmitted, challengesCount })
-        }
+        } catch {}
+      }
 
+      try {
         // Challenges base list
-        const chRes = await fetch(`${API_BASE}/api/admin/challenges`, { headers: auth })
-        if (chRes.ok) {
-          const cData = await chRes.json()
-          let items = (Array.isArray(cData) ? cData : []).map(c => ({
-            id: c._id || c.id || `${c.title}-${Math.random()}`,
-            name: c.title || c.name || 'Untitled',
-            description: c.description || '',
-            points: Number(c.points) || 0,
-            submissions: 0 // placeholder; will be replaced
-          }))
-          // Fetch per-challenge submissions count
-          const counts = await Promise.all(items.map(async ch => {
-            try {
-              const r = await fetch(`${API_BASE}/api/admin/challenges/${ch.id}/submissions`, { headers: auth })
-              if (!r.ok) return { id: ch.id, submissions: 0 }
-              const arr = await r.json()
-              return { id: ch.id, submissions: Array.isArray(arr) ? arr.length : 0 }
-            } catch { return { id: ch.id, submissions: 0 } }
-          }))
-          items = items.map(ch => {
-            const found = counts.find(c => c.id === ch.id)
-            return { ...ch, submissions: found ? found.submissions : ch.submissions }
-          })
-          if (mounted) setChallenges(items)
-          if (mounted && stats.challengesCount === 0) {
-            setStats(prev => ({ ...prev, challengesCount: items.length }))
-          }
+        const chRes = await api.get("/api/admin/challenges", { headers: auth })
+        const cData = chRes.data
+        let items = (Array.isArray(cData) ? cData : []).map(c => ({
+          id: c._id || c.id || `${c.title}-${Math.random()}`,
+          name: c.title || c.name || 'Untitled',
+          description: c.description || '',
+          points: Number(c.points) || 0,
+          submissions: 0 // placeholder; will be replaced
+        }))
+        // Fetch per-challenge submissions count
+        const counts = await Promise.all(items.map(async ch => {
+          try {
+            const r = await api.get(`/api/admin/challenges/${ch.id}/submissions`, { headers: auth })
+            const arr = r.data
+            return { id: ch.id, submissions: Array.isArray(arr) ? arr.length : 0 }
+          } catch { return { id: ch.id, submissions: 0 } }
+        }))
+        items = items.map(ch => {
+          const found = counts.find(c => c.id === ch.id)
+          return { ...ch, submissions: found ? found.submissions : ch.submissions }
+        })
+        if (mounted) setChallenges(items)
+        if (mounted && stats.challengesCount === 0) {
+          setStats(prev => ({ ...prev, challengesCount: items.length }))
         }
+      } catch {}
 
+      try {
         await fetchLeaderboard()
+      } catch {}
       } catch {} finally {
         if (mounted) setLoading(false)
       }

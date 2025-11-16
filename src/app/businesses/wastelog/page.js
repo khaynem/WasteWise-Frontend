@@ -32,7 +32,6 @@ const UNITS = [
   { value: "m³", label: "m³" },
 ];
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 const getToken = () =>
   localStorage.getItem("token") ||
   localStorage.getItem("authToken") ||
@@ -88,13 +87,11 @@ export default function WasteLogPage() {
       const token = getCookie("authToken") || getToken();
       if (!token) return;
 
-      const res = await fetch(`${API_BASE}/api/user/leaderboard`, {
-        method: "GET",
+      const res = await api.get("/api/user/leaderboard", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error(await res.text());
 
-      const data = await res.json();
+      const data = res.data;
 
       const mappedLeaderboard = (data.leaderboard || []).map((entry) => ({
         rank: entry.placement,

@@ -2,8 +2,7 @@
 
 import styles from "./non-government.module.css"
 import { useEffect, useState } from "react"
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+import api from "../../../lib/axios"
 
 function getCookie(name) {
   const value = `; ${document.cookie}`
@@ -31,29 +30,29 @@ export default function NonGovernmentDashboard() {
 
       try {
         const [wRes, rRes, cRes, lbRes] = await Promise.allSettled([
-          fetch(`${API_BASE}/api/user/wastelogs`, { headers }),
-          fetch(`${API_BASE}/api/admin/reports`, { headers }),
-          fetch(`${API_BASE}/api/admin/challenges`, { headers }),
-          fetch(`${API_BASE}/api/user/leaderboard`, { headers }),
+          api.get("/api/user/wastelogs", { headers }),
+          api.get("/api/admin/reports", { headers }),
+          api.get("/api/admin/challenges", { headers }),
+          api.get("/api/user/leaderboard", { headers }),
         ])
 
         let totalWasteLogs = 0
-        if (wRes.status === "fulfilled" && wRes.value.ok) {
-          const wJson = await wRes.value.json().catch(() => ({}))
+        if (wRes.status === "fulfilled") {
+          const wJson = wRes.value.data
           const wl = Array.isArray(wJson) ? wJson : (Array.isArray(wJson?.wasteLogs) ? wJson.wasteLogs : [])
           totalWasteLogs = wl.length
         }
 
         let totalReports = 0
-        if (rRes.status === "fulfilled" && rRes.value.ok) {
-          const rJson = await rRes.value.json().catch(() => ([]))
+        if (rRes.status === "fulfilled") {
+          const rJson = rRes.value.data
           const all = Array.isArray(rJson) ? rJson : (Array.isArray(rJson?.reports) ? rJson.reports : [])
           totalReports = all.length
         }
 
         let items = []
-        if (cRes.status === "fulfilled" && cRes.value.ok) {
-          const cj = await cRes.value.json().catch(() => ([]))
+        if (cRes.status === "fulfilled") {
+          const cj = cRes.value.data
           const base = Array.isArray(cj) ? cj : []
           items = await Promise.all(
             base.map(async (c) => {
@@ -65,11 +64,9 @@ export default function NonGovernmentDashboard() {
                 0
               if (id && submissions === 0) {
                 try {
-                  const sr = await fetch(`${API_BASE}/api/admin/challenges/${id}/submissions`, { headers })
-                  if (sr.ok) {
-                    const arr = await sr.json()
-                    submissions = Array.isArray(arr) ? arr.length : submissions
-                  }
+                  const sr = await api.get(`/api/admin/challenges/${id}/submissions`, { headers })
+                  const arr = sr.data
+                  submissions = Array.isArray(arr) ? arr.length : submissions
                 } catch {}
               }
               return {
@@ -82,8 +79,8 @@ export default function NonGovernmentDashboard() {
         }
 
         let lb = []
-        if (lbRes.status === "fulfilled" && lbRes.value.ok) {
-          const data = await lbRes.value.json().catch(() => ({}))
+        if (lbRes.status === "fulfilled") {
+          const data = lbRes.value.data
           const src = Array.isArray(data) ? data : (Array.isArray(data?.leaderboard) ? data.leaderboard : [])
           lb = src.map((entry, i) => ({
             id: entry.user?._id || entry.userId || `${entry.username || 'user'}-${i}`,

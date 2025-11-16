@@ -2,8 +2,7 @@
 
 import styles from './local-government.module.css'
 import { useEffect, useMemo, useState } from 'react'
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+import api from "../../../lib/axios"
 
 function getCookie(name) {
   const value = `; ${document.cookie}`
@@ -25,41 +24,41 @@ export default function LocalGovernmentDashboard() {
       const headers = token ? { Authorization: `Bearer ${token}` } : {}
       try {
         const [reportsRes, challengesRes, lbRes, wlAdminRes] = await Promise.allSettled([
-          fetch(`${API_BASE}/api/admin/reports`, { headers }),
-          fetch(`${API_BASE}/api/admin/challenges`, { headers }),
-          fetch(`${API_BASE}/api/user/leaderboard`, { headers }),
-          fetch(`${API_BASE}/api/admin/wastelogs`, { headers }),
+          api.get("/api/admin/reports", { headers }),
+          api.get("/api/admin/challenges", { headers }),
+          api.get("/api/user/leaderboard", { headers }),
+          api.get("/api/admin/wastelogs", { headers }),
         ])
 
         let allReports = []
-        if (reportsRes.status === "fulfilled" && reportsRes.value.ok) {
-          const rj = await reportsRes.value.json().catch(() => [])
+        if (reportsRes.status === "fulfilled") {
+          const rj = reportsRes.value.data
           allReports = Array.isArray(rj) ? rj : (Array.isArray(rj?.reports) ? rj.reports : [])
         }
 
         let baseChallenges = []
-        if (challengesRes.status === "fulfilled" && challengesRes.value.ok) {
-          const cj = await challengesRes.value.json().catch(() => [])
+        if (challengesRes.status === "fulfilled") {
+          const cj = challengesRes.value.data
           baseChallenges = Array.isArray(cj) ? cj : []
         }
 
         let totalWasteLogs = 0
-        if (wlAdminRes.status === "fulfilled" && wlAdminRes.value.ok) {
-          const wj = await wlAdminRes.value.json().catch(() => [])
+        if (wlAdminRes.status === "fulfilled") {
+          const wj = wlAdminRes.value.data
           const wl = Array.isArray(wj) ? wj : (Array.isArray(wj?.wasteLogs) ? wj.wasteLogs : [])
           totalWasteLogs = wl.length
         } else {
-          const wlUser = await fetch(`${API_BASE}/api/user/wastelogs`, { headers }).catch(() => null)
-          if (wlUser?.ok) {
-            const wj = await wlUser.json().catch(() => [])
+          try {
+            const wlUser = await api.get("/api/user/wastelogs", { headers })
+            const wj = wlUser.data
             const wl = Array.isArray(wj) ? wj : (Array.isArray(wj?.wasteLogs) ? wj.wasteLogs : [])
             totalWasteLogs = wl.length
-          }
+          } catch {}
         }
 
         let lb = []
-        if (lbRes.status === "fulfilled" && lbRes.value.ok) {
-          const lj = await lbRes.value.json().catch(() => ({}))
+        if (lbRes.status === "fulfilled") {
+          const lj = lbRes.value.data
           const src = Array.isArray(lj) ? lj : (Array.isArray(lj?.leaderboard) ? lj.leaderboard : [])
           lb = src.map((entry, i) => ({
             id: entry.user?._id || entry.userId || `${entry.username || 'user'}-${i}`,
@@ -80,11 +79,9 @@ export default function LocalGovernmentDashboard() {
               0
             if (id && submissions === 0) {
               try {
-                const subAdmin = await fetch(`${API_BASE}/api/admin/challenges/${id}/submissions`, { headers })
-                if (subAdmin.ok) {
-                  const arr = await subAdmin.json()
-                  submissions = Array.isArray(arr) ? arr.length : submissions
-                }
+                const subAdmin = await api.get(`/api/admin/challenges/${id}/submissions`, { headers })
+                const arr = subAdmin.data
+                submissions = Array.isArray(arr) ? arr.length : submissions
               } catch {}
             }
             return { id, name: c.title || c.name || "Untitled", submissions }
