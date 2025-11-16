@@ -1,0 +1,240 @@
+.main {
+  background: linear-gradient(120deg, #F3FFF7 60%, #E0F7FA 100%);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-left: 250px;
+  width: calc(100% - 250px);
+  transition: margin-left .25s, width .25s;
+}
+
+.header {
+  width: 100%;
+  background: #047857;
+  color: #fff;
+  padding: 2.2rem 0 1.4rem; 
+  text-align: center;
+  box-shadow: 0 2px 12px rgba(4,120,87,0.08);
+}
+
+.pageLabel {
+  font-size: clamp(1.65rem, 2.3vw + 1rem, 2.1rem);
+  font-weight: bold; 
+  margin-bottom: 0.4rem;
+  letter-spacing: 1px; 
+}
+
+.pageDesc {
+  font-size: clamp(.85rem, .6vw + .7rem, 1rem);
+  color: #CFFFE3;
+}
+
+.section {
+  width: 100%;
+  display: flex;
+  flex-direction: column; 
+  align-items: center;
+  padding: 2.5rem 1rem 3rem;
+  gap: 1.5rem; 
+}
+
+.container {
+  width: 100%;
+  max-width: 1000px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 400px), 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 1.1rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 20px rgba(4,120,87,0.12);
+  padding: 1.05rem 1.15rem 1.15rem; 
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.cardTitle {
+  margin: 0;
+  font-size: clamp(1rem, 1.5vw + .7rem, 1.1rem);
+  font-weight: 800;
+  color: #065f46;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 12px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.label {
+  font-size: clamp(.8rem, .8vw + .6rem, .9rem);
+  font-weight: 700;
+  color: #047857;
+}
+
+.input {
+  height: 40px;
+  padding: 0.8rem 1rem; 
+  border: 1px solid #d1d5db;
+  border-radius: 12px; 
+  outline: none;
+  font-size: clamp(.85rem, .6vw + .7rem, .9rem);
+  background: #fff; 
+  color: #0f172a;
+}
+
+.input:focus {
+  border-color: #047857;
+  box-shadow: 0 0 0 3px #04785733; 
+}
+
+.input:disabled {
+  background: #fff;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+.actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.primaryBtn,
+.secondaryBtn {
+  background: #047857;
+  color: #fff;
+  border: none;
+  border-radius: 12px; 
+  padding: 0.65rem 1.25rem; 
+  font-size: clamp(.8rem, .7vw + .65rem, .9rem);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(4,120,87,0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: background 0.18s ease;
+  white-space: nowrap;
+}
+
+.primaryBtn:hover:not(:disabled),
+.secondaryBtn:hover:not(:disabled) {
+  background: #03624a;
+}
+
+.primaryBtn:disabled,
+.secondaryBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loading {
+  color: #065f46;
+  font-weight: 700;
+  padding: 8px 0;
+  text-align: center;
+}
+
+.pwFieldWrap,
+.pwToggle {
+  display: none;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+  .main {
+    margin-left: 250px;
+    width: calc(100% - 250px);
+  }
+  .container {
+    max-width: 900px;
+    gap: 18px;
+  }
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    width: 100%;
+    padding-top: 60px;
+  }
+  .header {
+    padding: 1.4rem 1rem 1.1rem;
+  }
+  .section {
+    padding: 1.6rem 1rem 2.4rem;
+    gap: 1.2rem;
+  }
+  .container {
+    gap: 16px;
+  }
+  .card {
+    padding: 1rem;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 520px) {
+  .header {
+    padding: 1.2rem 1rem 1rem;
+  }
+  .section {
+    padding: 1.4rem 0.8rem 2rem;
+  }
+  .card {
+    padding: 0.9rem;
+    border-radius: 1rem;
+  }
+  .actions {
+    flex-direction: column;
+  }
+  .primaryBtn,
+  .secondaryBtn {
+    width: 100%;
+  }
+}
+
+/* Extra small */
+@media (max-width: 425px) {
+  .pageLabel {
+    font-size: 1.5rem;
+  }
+  .pageDesc {
+    font-size: 0.85rem;
+  }
+  .input {
+    height: 38px;
+    padding: 0.7rem 0.9rem;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .main,
+  .primaryBtn,
+  .secondaryBtn {
+    transition: none;
+  }
+}

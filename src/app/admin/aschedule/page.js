@@ -124,11 +124,14 @@ export default function ScheduleManagement() {
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [modalData, setModalData] = useState(null);
+  const [editDay, setEditDay] = useState('');
+  const [saving, setSaving] = useState(false);
 
   // Fetch schedules from backend
   useEffect(() => {
     const fetchSchedules = async () => {
-      //const authToken = getCookie("authToken");
       try {
         setLoading(true);
         const response = await api.get("/api/admin/schedules", {
@@ -183,81 +186,54 @@ export default function ScheduleManagement() {
 
   const filteredSchedules = getFilteredSchedules();
 
-  const handleEdit = async (scheduleId, typeId) => {
+  function openEditModal(scheduleId, typeId) {
+    const schedDoc = schedules.find(s => s._id === scheduleId);
+    if (!schedDoc) { toast.error("Schedule not found."); return; }
+    const typeDoc = Array.isArray(schedDoc.type) ? schedDoc.type.find(t => t._id === typeId) : null;
+    if (!typeDoc) { toast.error("Schedule type not found."); return; }
+    setModalData({
+      scheduleId,
+      typeId,
+      barangay: schedDoc.barangay,
+      typeName: typeDoc.typeName,
+      currentDay: typeDoc.day || ""
+    });
+    setEditDay(typeDoc.day || "");
+    setShowEditModal(true);
+  }
+
+  async function submitEdit() {
+    if (!modalData) return;
+    const trimmed = String(editDay || "").trim();
+    if (!trimmed) { toast.warn("Schedule cannot be empty."); return; }
+    if (trimmed === modalData.currentDay) {
+      toast.info("No changes made.");
+      setShowEditModal(false);
+      setModalData(null);
+      return;
+    }
     try {
-      //const authToken = getCookie("authToken");
-      if (!authToken) {
-        toast.error("Missing auth token. Please sign in again.");
-        return;
-      }
-
-      // Find the schedule and type by their IDs
-      const schedDoc = schedules.find(s => s._id === scheduleId);
-      if (!schedDoc) {
-        toast.error("Schedule not found.");
-        return;
-      }
-      const typeDoc = Array.isArray(schedDoc.type)
-        ? schedDoc.type.find(t => t._id === typeId)
-        : null;
-
-      if (!typeDoc) {
-        toast.error("Schedule type not found.");
-        return;
-      }
-
-      const currentDay = typeDoc.day || "";
-      const newDay = window.prompt(
-        `Enter new schedule for "${typeDoc.typeName}" in ${schedDoc.barangay}:`,
-        currentDay
-      );
-
-      if (newDay === null) return; // user cancelled
-      const trimmed = newDay.trim();
-      if (!trimmed) {
-        toast.warn("Schedule cannot be empty.");
-        return;
-      }
-      if (trimmed === currentDay) {
-        toast.info("No changes made.");
-        return;
-      }
-
-      // Call backend to update schedule
-      await api.patch(
-        "/api/admin/schedules/edit",
-        {
-          barangay: schedDoc.barangay,
-          typeName: typeDoc.typeName,
-          newDay: trimmed
-        },
-        {
-          headers: {
-            // Authorization: `Bearer ${authToken}`
-          }
-        }
-      );
-
-      // Update local state to reflect the change
-      setSchedules(prev =>
-        prev.map(s =>
-          s._id === scheduleId
-            ? {
-                ...s,
-                type: s.type.map(t =>
-                  t._id === typeId ? { ...t, day: trimmed } : t
-                )
-              }
-            : s
-        )
-      );
-
+      setSaving(true);
+      await api.patch("/api/admin/schedules/edit", {
+        barangay: modalData.barangay,
+        typeName: modalData.typeName,
+        newDay: trimmed
+      }, { headers: {} });
+      setSchedules(prev => prev.map(s =>
+        s._id === modalData.scheduleId
+          ? { ...s, type: s.type.map(t => t._id === modalData.typeId ? { ...t, day: trimmed } : t) }
+          : s
+      ));
       toast.success("Schedule updated successfully.");
+      setShowEditModal(false);
+      setModalData(null);
     } catch (err) {
       console.error(err);
       toast.error("Failed to update schedule. Please try again.");
+    } finally {
+      setSaving(false);
     }
-  };
+  }
 
   if (loading) {
     return (
@@ -379,7 +355,7 @@ export default function ScheduleManagement() {
                           <div className={styles.actionButtons}>
                             <button 
                               className={`${styles.actionBtn} ${styles.editBtn}`}
-                              onClick={() => handleEdit(schedule.scheduleId, schedule.id)}
+                              onClick={() => openEditModal(schedule.scheduleId, schedule.id)}
                               title="Edit Schedule"
                             >
                               <i className="fas fa-edit"></i>
@@ -405,6 +381,49 @@ export default function ScheduleManagement() {
         </div>
       </main>
       <ToastContainer position="top-right" autoClose={3000} theme="colored" />
+
+     {showEditModal && modalData && (
+       <div className={styles.editModalOverlay}>
+         <div className={styles.editModal} role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
+           <div className={styles.editModalHeader}>
+             <h3 id="edit-modal-title" style={{ margin: 0 }}>
+               Edit schedule for {modalData.typeName} — {modalData.barangay}
+             </h3>
+             <button
+               className={styles.closeBtn}
+               onClick={() => { setShowEditModal(false); setModalData(null); }}
+               aria-label="Close"
+             >
+               ×
+             </button>
+           </div>
+           <div className={styles.editModalBody}>
+             <label htmlFor="edit-day" style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>
+               Schedule
+             </label>
+             <input
+               id="edit-day"
+               value={editDay}
+               onChange={(e) => setEditDay(e.target.value)}
+               className={styles.input}
+               placeholder="e.g. Monday, Wednesday, Friday"
+             />
+           </div>
+           <div className={styles.editModalActions}>
+             <button
+               className={styles.buttonSecondary}
+               onClick={() => { setShowEditModal(false); setModalData(null); }}
+               disabled={saving}
+             >
+               Cancel
+             </button>
+             <button className={styles.buttonPrimary} onClick={submitEdit} disabled={saving}>
+               {saving ? "Saving…" : "Save"}
+             </button>
+           </div>
+         </div>
+       </div>
+     )}
     </>
   );
 }

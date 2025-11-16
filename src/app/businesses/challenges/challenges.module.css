@@ -1,0 +1,608 @@
+.challengesMain {
+  margin-left: 250px;
+  padding: 2rem;
+  min-height: 100vh;
+  background-color: #F3FFF7;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.tableContainer {
+  background: white;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.headerSection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+.sectionTitle {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #1f2937;
+}
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.createBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #047857;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(4,120,87,0.2);
+  font-weight: bold;
+}
+.createBtn:hover {
+  background: #03624a;
+}
+
+.tableWrapper {
+  overflow-x: auto;
+}
+.challengeTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.challengeTable thead th {
+  background-color: #f9fafb;
+  color: #374151;
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+  font-weight: bold;
+}
+.challengeRow {
+  border-bottom: 1px solid #f3f4f6;
+  transition: background-color 0.2s;
+}
+.challengeRow:hover {
+  background-color: #f9fafb;
+}
+.challengeRow:last-child {
+  border-bottom: none;
+}
+.challengeCell {
+  padding: 1rem;
+  color: #1f2937;
+  vertical-align: top;
+}
+.cellTitle {
+  color: #111827;
+  font-weight: bold;
+}
+.cellShort {
+  color: #6b7280;
+  margin-top: 2px;
+  font-size: 0.85rem;
+}
+.cellDesc {
+  color: #374151;
+  line-height: 1.35;
+  max-width: 560px;
+}
+
+.rulesInline {
+  margin-top: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.rulePill {
+  background: #eef2f7;
+  color: #334155;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+.morePill {
+  background: #e0f2fe;
+  color: #075985;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.pointsBadge {
+  background: #f0fdf4;
+  color: #065f46;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid #d1fae5;
+  font-weight: bold;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.actionBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.actionBtn:active {
+  transform: translateY(0);
+}
+.deleteBtn {
+  background-color: #ef4444;
+  color: white;
+}
+.deleteBtn:hover {
+  background-color: #dc2626;
+  transform: translateY(-1px);
+}
+
+.emptyState {
+  text-align: center;
+  color: #6b7280;
+  font-style: italic;
+  padding: 2rem 1rem;
+}
+.loading {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+.errorBar {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  color: #F44336;
+  background: #ffebee;
+  border: 1px solid #ffcdd2;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+}
+.retryBtn {
+  background: #047857;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1001;
+  padding: 1rem;
+}
+.modal {
+  width: min(720px, 96vw);
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.25);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.modalHeader {
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid #e5e7eb;
+  color: #047857;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: bold;
+  font-size: 1.3rem;
+}
+.modalClose {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #64748b;
+}
+.modalBody {
+  padding: 1rem 1.2rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  color: #374151;
+}
+
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.label {
+  color: #047857;
+  font-weight: bold;
+}
+.input,
+.textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  outline: none;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+.textarea {
+  resize: vertical;
+  min-height: 120px;
+  line-height: 1.35;
+}
+
+.instToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.toggleLabel {
+  color: #047857;
+  font-weight: bold;
+}
+.toggleButtons {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 2px;
+}
+.toggleBtn {
+  background: transparent;
+  border: none;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #0f172a;
+}
+.toggleBtnActive {
+  background: #047857;
+  color: #fff;
+}
+
+.inlineHelp {
+  font-size: 0.8rem;
+  color: #64748b;
+}
+
+.actionsRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.2rem;
+}
+.buttonPrimary {
+  background: #047857;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(4,120,87,0.2);
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.buttonPrimary:hover {
+  background: #03624a;
+}
+.buttonSecondary {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.65rem 1.1rem;
+  cursor: pointer;
+}
+.buttonSecondary:hover {
+  background: #e2e8f0;
+}
+
+.gridWrap {
+  width: 100%;
+}
+.challengeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+  gap: 20px;
+}
+.challengeCard {
+  background: #fff;
+  border-radius: 1.1rem;
+  box-shadow: 0 4px 20px rgba(4,120,87,0.12);
+  padding: 1.05rem 1.15rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  border: 1px solid #e5e7eb;
+}
+.challengeCard:hover {
+  box-shadow: 0 6px 28px rgba(4,120,87,0.18);
+  transform: translateY(-2px);
+  transition: 0.18s;
+}
+.cardHeaderRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.cardActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.cardTitle {
+  margin: 0;
+  font-size: 1.2rem;
+  line-height: 1.25;
+  color: #065f46;
+  font-weight: bold;
+}
+.cardPartition {
+  width: 100%;
+  height: 1px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #047857 0%, #34d399 60%, #10b981 100%);
+  opacity: 0.55;
+}
+.cardDesc {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: #334155;
+  font-family: inherit;
+}
+.cardBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-top: 0.2rem;
+}
+.viewBtn {
+  background: #047857;
+  color: #fff;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(4,120,87,0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+.viewBtn:hover {
+  background: #03624a;
+}
+
+.paragraphText {
+  white-space: pre-line;
+  line-height: 1.45;
+  color: #374151;
+}
+.rulesList {
+  margin: 0.25rem 0 0;
+  padding-left: 1.2rem;
+  list-style: disc;
+}
+.ruleItem {
+  color: #374151;
+  line-height: 1.45;
+  margin: 0.2rem 0;
+  font-family: inherit;
+}
+
+.confirmText {
+  margin: 0.25rem 0 0.5rem;
+  line-height: 1.45;
+  color: #374151;
+}
+.buttonDanger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.65rem 1.1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(239,68,68,0.2);
+  font-weight: bold;
+}
+.buttonDanger:hover {
+  background: #dc2626;
+}
+.buttonDanger:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.subsHeaderRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.subsCount {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+.submissionsList {
+  list-style: none;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px; 
+  max-height: 320px;
+  overflow: auto;
+}
+.submissionItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem; 
+  background: #fff;
+}
+.subLeft {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.subAvatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #e7f7f0;
+  color: #065f46;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  user-select: none;
+  font-size: 0.95rem;
+  border: 1px solid #c7eadc;
+}
+.subText {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+.subName {
+  font-weight: 600;
+  color: #0f172a;
+}
+.subTime {
+  font-size: 0.85rem;
+  color: #64748b;
+}
+
+.proofWrap {
+  width: 100%;
+  max-width: 520px;       
+  margin: 0 auto;      
+  overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  background: #f8fafc;
+}
+.proofImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  object-fit: contain;
+  max-height: 420px;     
+  border-radius: 8px;
+}
+
+.submissionBtn {
+  background: #047857;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(4,120,87,0.2);
+  font-weight: 600;
+  font-family: inherit;
+}
+.submissionBtn:hover {
+  background: #03624a;
+}
+.submissionBtn:focus-visible {
+  outline: 2px solid #10b981;
+  outline-offset: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .challengesMain {
+    margin-left: 0;
+    margin-top: 60px;
+    padding: 1rem;
+  }
+  .challengeTable {
+    font-size: 0.8rem;
+  }
+  .challengeTable thead th,
+  .challengeCell {
+    padding: 0.75rem 0.5rem;
+  }
+  .cellDesc {
+    max-width: 100%;
+  }
+  .actionButtons {
+    flex-direction: row;
+  }
+  .challengeGrid {
+    gap: 16px;
+  }
+  .challengeCard {
+    padding: 0.95rem 1rem 1.05rem;
+  }
+  .cardTitle {
+    font-size: 1.05rem;
+  }
+  .cardDesc {
+    font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .formRow {
+    grid-template-columns: 1fr;
+  }
+}

@@ -77,14 +77,19 @@ export default function Login() {
 
           if (response.data.code === 200) {
             toast.success("Signed in successfully.");
-            if(response.data.role === 'admin') {
-              setTimeout(() => router.push('/admin/adashboard'), 400);
-              return;
-            }
-            if(response.data.role === 'user') {
-              setTimeout(() => router.push('/'), 400);
-              return;
-            }
+            const role = response.data.role;
+            const roleRoutes = {
+              admin: '/admin/adashboard',
+              user: '/',
+              barangay: '/barangay/dashboard',
+              business: '/businesses/dashboard',   
+              businesses: '/businesses/dashboard',
+              'non-government': '/non-government/dashboard',
+              'local-government': '/local-government/dashboard'
+            };
+            const target = roleRoutes[role] || `/${role}/dashboard`;
+            setTimeout(() => router.push(target), 400);
+            return;
           }
         } catch (error) {
           if (error.response?.status === 404) {

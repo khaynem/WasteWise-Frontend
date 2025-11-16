@@ -194,6 +194,64 @@ export default function AdminNavBar() {
           <i className="fas fa-trophy" style={{ marginRight: "10px" }}></i>
           Challenges
         </Link>
+
+        {/* Community */}
+        <Link
+          href="/admin/acommunity"
+          onClick={closeMenu}
+          style={{
+            display: "block",
+            padding: "15px 20px",
+            color: "white",
+            textDecoration: "none",
+            transition: "background-color 0.2s",
+            backgroundColor: pathname === "/admin/acommunity" ? "#059669" : "transparent",
+            borderLeft: pathname === "/admin/acommunity" ? "4px solid #10b981" : "4px solid transparent",
+            fontWeight: pathname === "/admin/acommunity" ? "bold" : "normal",
+          }}
+          onMouseEnter={(e) => {
+            if (pathname !== "/admin/acommunity") {
+              e.currentTarget.style.backgroundColor = "#059669";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (pathname !== "/admin/acommunity") {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }
+          }}
+        >
+          <i className="fas fa-people-group" style={{ marginRight: "10px" }}></i>
+          Community
+        </Link>
+
+        {/* Profile */}
+        <Link
+          href="/admin/aprofile"
+          onClick={closeMenu}
+          style={{
+            display: "block",
+            padding: "15px 20px",
+            color: "white",
+            textDecoration: "none",
+            transition: "background-color 0.2s",
+            backgroundColor: pathname === "/admin/aprofile" ? "#059669" : "transparent",
+            borderLeft: pathname === "/admin/aprofile" ? "4px solid #10b981" : "4px solid transparent",
+            fontWeight: pathname === "/admin/aprofile" ? "bold" : "normal",
+          }}
+          onMouseEnter={(e) => {
+            if (pathname !== "/admin/aprofile") {
+              e.currentTarget.style.backgroundColor = "#059669";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (pathname !== "/admin/aprofile") {
+              e.currentTarget.style.backgroundColor = "transparent";
+            }
+          }}
+        >
+          <i className="fas fa-user-circle" style={{ marginRight: "10px" }}></i>
+          Profile
+        </Link>
       </div>
 
       {/* Bottom Divider */}
@@ -247,7 +305,7 @@ export default function AdminNavBar() {
           </div>
           <div>
             <div style={{ fontWeight: "bold", fontSize: "14px" }}>Admin User</div>
-            <div style={{ fontSize: "12px", color: "#d1fae5" }}>admin@gmail.com</div>
+            <div style={{ fontSize: "12px", color: "#d1fae5" }}>account</div>
           </div>
         </div>
 

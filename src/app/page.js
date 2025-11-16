@@ -10,6 +10,9 @@ import api from "../lib/axios";
 import { toast } from "react-toastify"; 
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import BotpressWidget from "./components/BotpressWidget";
+
+
 function getCookie(name) {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -1012,6 +1015,8 @@ export default function Page() {
         </section>
       </div>
       <ToastContainer position="top-right" autoClose={3000} theme="colored" style={{ top: isMobile ? TOPNAV_HEIGHT + 8 : 8 }} />
+      <BotpressWidget />
     </main>
+    
   );
 }

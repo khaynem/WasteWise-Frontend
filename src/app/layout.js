@@ -1,6 +1,5 @@
 import "./globals.css";
 import ConditionalWrapper from "./components/ConditionalWrapper";
-import BotpressWidget from "./components/BotpressWidget";
 import ToastProvider from "./components/ToastProvider";
 
 export const metadata = {
@@ -20,7 +19,6 @@ export default function RootLayout({ children }) {
       </head>
       <body>
         <ToastProvider />
-        <BotpressWidget />
         <ConditionalWrapper>{children}</ConditionalWrapper>
       </body>
     </html>

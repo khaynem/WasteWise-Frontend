@@ -1,0 +1,77 @@
+.dashboardMain {
+  margin-left: 250px;
+  padding: 2rem;
+  min-height: 100vh;
+  background: linear-gradient(180deg,#F8FFF9 0%, #F6FFF9 100%);
+}
+
+@media (max-width: 768px) {
+  .dashboardMain { margin-left: 0; margin-top: 60px; padding: 1rem }
+}
+
+.container { max-width: 1200px; margin:0 auto }
+.title {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin-bottom: 2rem;
+  text-align: left;
+}
+
+.statsGrid { display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1.25rem; margin-bottom:1.5rem }
+.statCard { background: linear-gradient(180deg,#ffffff 0%, #fbfffb 100%); border-radius:12px; padding:1rem; box-shadow:0 8px 22px rgba(8,22,18,0.06); display:flex; align-items:center; gap:1rem; border:1px solid rgba(3,105,87,0.04); transition: transform .14s ease }
+.statCard:hover { transform: translateY(-6px); box-shadow:0 14px 40px rgba(8,22,18,0.08) }
+.statIcon { width:56px; height:56px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:white; font-size:1.25rem }
+.statContent { flex:1 }
+.statTitle { font-size:0.9rem; color:#4b5563; margin-bottom:0.25rem }
+.statNumber { font-size:1.6rem; font-weight:700; color:#071422 }
+
+.panel { background: linear-gradient(180deg,#ffffff 0%, #fbfffb 100%); padding:1rem; border-radius:12px; box-shadow:0 6px 18px rgba(12,21,14,0.04); border:1px solid rgba(3,105,87,0.04); margin-top:1rem }
+.sectionTitle { font-size:1.125rem; margin:0 0 0.75rem 0; color:#05201b }
+
+.tableWrap { overflow:auto }
+.simpleTable { width:100%; border-collapse:collapse }
+.simpleTable th, .simpleTable td { text-align:left; padding:0.75rem; border-bottom:1px solid #f3f4f6 }
+.simpleTable thead th { background:#fbfff6 }
+
+@media (max-width:900px) { .statsGrid { grid-template-columns: 1fr } }
+
+/* side-by-side panels row */
+.sectionRow { display:grid; gap:1.25rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+
+/* EXACT leaderboard design (copied to match other dashboards) */
+.leaderboardList { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+.leaderItem { background:#f8fdfb; border:1px solid rgba(6,95,87,0.08); border-radius:10px; padding:.55rem .75rem; transition:background .15s ease, transform .15s ease; }
+.leaderItem:hover { background:#f1fbf6; transform:translateY(-3px); }
+.leaderboardFirst { border-color:#fbbf24; box-shadow:0 0 0 2px rgba(251,191,36,0.2); }
+.leaderboardSecond { border-color:#d1d5db; }
+.leaderboardThird { border-color:#f59e0b; }
+.leaderRow { display:flex; align-items:center; gap:10px; }
+.leaderRank { width:40px; text-align:center; font-weight:700; font-size:1.05rem; color:#065f46; }
+.leaderNameWrap { flex:1; display:flex; align-items:center; gap:8px; font-weight:600; color:#0f172a; }
+.leaderName { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:160px; }
+.crownIcon { color:#f59e0b; font-size:1.05rem; filter:drop-shadow(0 1px 2px rgba(245,158,11,0.4)); }
+.tierBadge { background:#e2f7f2; color:#064e3b; font-size:.65rem; font-weight:700; padding:4px 7px; border-radius:999px; letter-spacing:.5px; text-transform:uppercase; border:1px solid rgba(6,95,87,0.25); }
+.tierBadge[data-tier="Gold"] { background:#fef9c3; color:#854d0e; border-color:#eab308; }
+.tierBadge[data-tier="Silver"] { background:#f1f5f9; color:#475569; border-color:#94a3b8; }
+.tierBadge[data-tier="Bronze"] { background:#fef3c7; color:#92400e; border-color:#f59e0b; }
+.leaderScore { font-weight:700; color:#065f46; display:flex; align-items:center; gap:4px; }
+
+@media (max-width:900px) {
+  .leaderItem { padding:0.5rem 0 }
+}
+
+/* Ensure regular text uses black for high contrast */
+.container, .panel, .statContent, .leaderItem, .simpleTable td, .simpleTable th { color: black }
+
+/* Chart container */
+.chartWrap { padding: 1rem; background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-top: 1rem; display:flex; justify-content:center; align-items:center; height: auto; }
+.chartTitle { font-size: 0.95rem; margin-bottom: 0.5rem }
+
+/* Challenges overview */
+.challengeList { display:flex; flex-direction:column; gap:8px }
+.challengeItem { background:#ffffff; border:1px solid rgba(6,95,87,0.08); border-radius:10px; padding:.6rem .75rem; transition:background .15s ease, transform .15s ease }
+.challengeItem:hover { background:#f6fefb; transform: translateY(-3px) }
+.challengeRow { display:flex; align-items:center; justify-content:space-between; gap:12px }
+.challengeName { font-weight:600; font-size:.95rem; color:#0f172a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:70% }
+.challengeSubmissions { font-size:.8rem; font-weight:600; color:#065f46; background:#e7f9f3; padding:4px 8px; border-radius:8px; border:1px solid rgba(6,95,87,0.2) }

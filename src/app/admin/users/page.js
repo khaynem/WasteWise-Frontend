@@ -3,7 +3,7 @@
 import AdminNavBar from "../componentsadmin/adminNavBar";
 import { useState, useEffect } from 'react';
 import styles from './users.module.css';
-import api from "../../../lib/axios"; // Add this import at the top
+import api from "../../../lib/axios"; 
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -18,7 +18,6 @@ function formatDate(dateString) {
   if (!dateString) return "—";
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return "—";
-  // Format: Month Day Year (e.g., Oct 6 2025)
   return date.toLocaleString('en-US', {
     year: 'numeric',
     month: 'short',
@@ -34,6 +33,12 @@ export default function UsersPage() {
   const [selectedAction, setSelectedAction] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [changingRoleFor, setChangingRoleFor] = useState(null); // id of user being changed
+
+  const [roleModalOpen, setRoleModalOpen] = useState(false);
+  const [pendingRoleChange, setPendingRoleChange] = useState({ userId: null, newRole: null, username: '' });
+  
+  const ROLE_OPTIONS = ['user', 'admin', 'barangay', 'business', 'non-government', 'local-government'];
 
   // Fetch users from backend
   const fetchUsers = async () => {
@@ -51,7 +56,6 @@ export default function UsersPage() {
     }
   };
 
-  // Replace mock data useEffect with API call
   useEffect(() => {
     fetchUsers();
   }, []);
@@ -150,6 +154,38 @@ export default function UsersPage() {
     }
   };
 
+  const handleRoleChange = (userId, newRole) => {
+    if (!userId || !newRole) return;
+    const user = users.find(u => u._id === userId);
+    if (!user) return;
+    if (user.role === newRole) return;
+    setPendingRoleChange({ userId, newRole, username: user.username });
+    setRoleModalOpen(true);
+  };
+
+  const confirmRoleChange = async () => {
+    const { userId, newRole } = pendingRoleChange;
+    if (!userId || !newRole) return;
+    try {
+      setChangingRoleFor(userId);
+      await api.post(`/api/admin/user/role/update/${userId}`, { newRole });
+      setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: newRole } : u));
+      toast.success(`Role updated to "${newRole}".`);
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to change role. Please try again.");
+    } finally {
+      setChangingRoleFor(null);
+      setPendingRoleChange({ userId: null, newRole: null, username: '' });
+      setRoleModalOpen(false);
+    }
+  };
+
+  const cancelRoleChange = () => {
+    setPendingRoleChange({ userId: null, newRole: null, username: '' });
+    setRoleModalOpen(false);
+  };
+
   return (
     <>
       <AdminNavBar />
@@ -221,7 +257,28 @@ export default function UsersPage() {
                           </div>
                         </div>
                       </td>
-                      <td className={styles.roleCell}>{user.role}</td>
+                      <td className={styles.roleCell}>
+                        <select
+                          value={user.role || 'user'}
+                          onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                          disabled={changingRoleFor === user._id}
+                          style={{
+                            padding: '0.35rem 0.5rem',
+                            borderRadius: '6px',
+                            border: '1px solid #d1d5db',
+                            background: '#fff',
+                            color: '#374151',
+                            fontSize: '0.95rem',
+                            cursor: 'pointer'
+                          }}
+                        >
+                          {ROLE_OPTIONS.map(r => (
+                            <option key={r} value={r}>
+                              {r}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
                       <td className={styles.statusCell}>
                         <span 
                           className={styles.statusBadge}
@@ -309,6 +366,39 @@ export default function UsersPage() {
                     onClick={handleConfirmAction}
                   >
                     {getActionText(selectedAction)}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Role Change Confirmation Modal */}
+          {roleModalOpen && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modal}>
+                <div className={styles.modalHeader}>
+                  <h3>Confirm Role Change</h3>
+                  <button className={styles.closeBtn} onClick={cancelRoleChange}>
+                    <i className="fas fa-times"></i>
+                  </button>
+                </div>
+                <div className={styles.modalBody}>
+                  <p>
+                    Change role for <strong>{pendingRoleChange.username}</strong> to <strong>{pendingRoleChange.newRole}</strong>?
+                  </p>
+                  <p className={styles.warningText}>
+                    <i className="fas fa-exclamation-triangle"></i>
+                    This will update the user's permissions immediately.
+                  </p>
+                </div>
+                <div className={styles.modalFooter}>
+                  <button className={styles.cancelBtn} onClick={cancelRoleChange}>Cancel</button>
+                  <button
+                    className={styles.confirmBtn}
+                    onClick={confirmRoleChange}
+                    disabled={changingRoleFor === pendingRoleChange.userId}
+                  >
+                    {changingRoleFor === pendingRoleChange.userId ? 'Updating...' : 'Confirm'}
                   </button>
                 </div>
               </div>

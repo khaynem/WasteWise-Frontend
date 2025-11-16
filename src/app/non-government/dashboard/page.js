@@ -1,0 +1,208 @@
+"use client"
+
+import styles from "./non-government.module.css"
+import { useEffect, useState } from "react"
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`
+  const parts = value.split(`; ${name}=`)
+  if (parts.length === 2) return parts.pop()?.split(";").shift() || null
+  return null
+}
+
+export default function NonGovernmentDashboard() {
+  const [stats, setStats] = useState({
+    totalWasteLogs: 0,
+    totalReports: 0,
+    challengesCount: 0,
+  })
+  const [leaderboard, setLeaderboard] = useState([])
+  const [challenges, setChallenges] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let mounted = true
+    async function load() {
+      setLoading(true)
+      const token = getCookie("authToken")
+      const headers = token ? { Authorization: `Bearer ${token}` } : {}
+
+      try {
+        const [wRes, rRes, cRes, lbRes] = await Promise.allSettled([
+          fetch(`${API_BASE}/api/user/wastelogs`, { headers }),
+          fetch(`${API_BASE}/api/admin/reports`, { headers }),
+          fetch(`${API_BASE}/api/admin/challenges`, { headers }),
+          fetch(`${API_BASE}/api/user/leaderboard`, { headers }),
+        ])
+
+        let totalWasteLogs = 0
+        if (wRes.status === "fulfilled" && wRes.value.ok) {
+          const wJson = await wRes.value.json().catch(() => ({}))
+          const wl = Array.isArray(wJson) ? wJson : (Array.isArray(wJson?.wasteLogs) ? wJson.wasteLogs : [])
+          totalWasteLogs = wl.length
+        }
+
+        let totalReports = 0
+        if (rRes.status === "fulfilled" && rRes.value.ok) {
+          const rJson = await rRes.value.json().catch(() => ([]))
+          const all = Array.isArray(rJson) ? rJson : (Array.isArray(rJson?.reports) ? rJson.reports : [])
+          totalReports = all.length
+        }
+
+        let items = []
+        if (cRes.status === "fulfilled" && cRes.value.ok) {
+          const cj = await cRes.value.json().catch(() => ([]))
+          const base = Array.isArray(cj) ? cj : []
+          items = await Promise.all(
+            base.map(async (c) => {
+              const id = c._id || c.id
+              let submissions =
+                Number(c.submissions) ||
+                Number(c.submissionsCount) ||
+                (Array.isArray(c.submissions) ? c.submissions.length : 0) ||
+                0
+              if (id && submissions === 0) {
+                try {
+                  const sr = await fetch(`${API_BASE}/api/admin/challenges/${id}/submissions`, { headers })
+                  if (sr.ok) {
+                    const arr = await sr.json()
+                    submissions = Array.isArray(arr) ? arr.length : submissions
+                  }
+                } catch {}
+              }
+              return {
+                id: id || `${c.title || c.name}-${Math.random()}`,
+                name: c.title || c.name || "Untitled",
+                submissions,
+              }
+            })
+          )
+        }
+
+        let lb = []
+        if (lbRes.status === "fulfilled" && lbRes.value.ok) {
+          const data = await lbRes.value.json().catch(() => ({}))
+          const src = Array.isArray(data) ? data : (Array.isArray(data?.leaderboard) ? data.leaderboard : [])
+          lb = src.map((entry, i) => ({
+            id: entry.user?._id || entry.userId || `${entry.username || 'user'}-${i}`,
+            rank: entry.placement ?? i + 1,
+            name: entry.user?.username || entry.username || "Anonymous",
+            score: entry.points ?? entry.score ?? 0,
+            tier: entry.rank || entry.tier || "Bronze"
+          }))
+        }
+
+        if (!mounted) return
+        setStats({ totalWasteLogs, totalReports, challengesCount: items.length })
+        setChallenges(items)
+        setLeaderboard(lb)
+      } catch {
+        if (!mounted) return
+        setStats({ totalWasteLogs: 0, totalReports: 0, challengesCount: 0 })
+        setChallenges([])
+        setLeaderboard([])
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [])
+
+  return (
+    <main className={styles.dashboardMain}>
+      <div className={styles.container}>
+        <h1 className={styles.title}>NGO Dashboard</h1>
+
+        <div className={styles.statsGrid}>
+          <div className={styles.statCard}>
+            <div className={styles.statIcon} style={{ backgroundColor: "#10b981" }}>
+              <i className="fas fa-database" />
+            </div>
+            <div className={styles.statContent}>
+              <div className={styles.statTitle}>Total Waste Logs</div>
+              <div className={styles.statNumber}>{stats.totalWasteLogs.toLocaleString()}</div>
+            </div>
+          </div>
+
+          <div className={styles.statCard}>
+            <div className={styles.statIcon} style={{ backgroundColor: "#3b82f6" }}>
+              <i className="fas fa-clipboard-list" />
+            </div>
+            <div className={styles.statContent}>
+              <div className={styles.statTitle}>Total Reports</div>
+              <div className={styles.statNumber}>{stats.totalReports.toLocaleString()}</div>
+            </div>
+          </div>
+
+          <div className={styles.statCard}>
+            <div className={styles.statIcon} style={{ backgroundColor: "#f59e0b" }}>
+              <i className="fas fa-flag" />
+            </div>
+            <div className={styles.statContent}>
+              <div className={styles.statTitle}>Number of Challenges</div>
+              <div className={styles.statNumber}>{stats.challengesCount}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.sectionRow}>
+          <section className={styles.panel}>
+            <h2 className={styles.sectionTitle}>Challenge Participation</h2>
+            <div className={styles.challengeList}>
+              {challenges.map((c) => (
+                <div key={c.id} className={styles.challengeItem}>
+                  <div className={styles.challengeRow}>
+                    <div className={styles.challengeName}>{c.name}</div>
+                    <div className={styles.challengeSubmissions}>
+                      <strong>{c.submissions ?? 0}</strong> submissions
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {(!loading && challenges.length === 0) && (
+                <div className={styles.challengeItem}>
+                  <div className={styles.challengeRow}>
+                    <div className={styles.challengeName}>No challenges found</div>
+                    <div className={styles.challengeSubmissions}>0 submissions</div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </section>
+
+          <section className={styles.panel}>
+            <h2 className={styles.sectionTitle}>Eco-score Leaderboard</h2>
+            <ol className={styles.leaderboardList}>
+              {leaderboard.length === 0 ? (
+                <li className={styles.leaderItem}><span>No rankings yet</span></li>
+              ) : (
+                leaderboard.map((u, idx) => (
+                  <li
+                    key={`${u.id || u.name}-${u.rank}-${idx}`}
+                    className={
+                      styles.leaderItem + ' ' +
+                      (u.rank === 1 ? styles.leaderboardFirst : u.rank === 2 ? styles.leaderboardSecond : u.rank === 3 ? styles.leaderboardThird : '')
+                    }
+                  >
+                    <div className={styles.leaderRow}>
+                      <div className={styles.leaderRank}>{u.rank}</div>
+                      <div className={styles.leaderNameWrap}>
+                        {u.rank === 1 && <i className={`fas fa-crown ${styles.crownIcon}`} aria-hidden="true" />}
+                        <span className={styles.leaderName}>{u.name}</span>
+                        {u.tier && <span className={styles.tierBadge} data-tier={u.tier}>{u.tier}</span>}
+                      </div>
+                      <div className={styles.leaderScore}><i className="fas fa-leaf" aria-hidden="true" /> {u.score ?? u.points ?? 0}</div>
+                    </div>
+                  </li>
+                ))
+              )}
+            </ol>
+          </section>
+        </div>
+      </div>
+    </main>
+  )
+}
