@@ -227,11 +227,12 @@ export default function Page() {
     const token = getCookie("authToken");
     if (!token) {
       router.replace("/home");
+      toast.error("Please sign in to continue.");
       return;
     }
     if (isTokenExpired(token)) {
       clearAuthCookie();
-      // toast.error("Session expired. Please sign in again.");
+      toast.error("Session expired. Please sign in again.");
       router.replace("/home");
       return;
     }
@@ -239,7 +240,7 @@ export default function Page() {
     if (msLeft > 0) {
       const t = setTimeout(() => {
         clearAuthCookie();
-        // toast.error("Session expired. Please sign in again.");
+        toast.error("Session expired. Please sign in again.");
         router.replace("/home");
       }, msLeft);
       return () => clearTimeout(t);
@@ -316,7 +317,7 @@ export default function Page() {
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
-    //const authToken = getCookie("authToken");
+    const authToken = getCookie("authToken");
     if (!authToken || isTokenExpired(authToken)) {
       clearAuthCookie();
       toast.error("Session expired. Please sign in again.");
