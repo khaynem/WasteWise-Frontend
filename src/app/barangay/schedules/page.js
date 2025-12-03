@@ -118,7 +118,6 @@ export default function ScheduleManagement() {
   const [selectedBarangay, setSelectedBarangay] = useState('');
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [modalData, setModalData] = useState(null);
   const [editDay, setEditDay] = useState('');
@@ -141,9 +140,9 @@ export default function ScheduleManagement() {
           withCredentials: true
         });
         setSchedules(response.data);
-        setError('');
       } catch (error) {
-        setError("Failed to fetch schedules. Please try again.");
+        console.error("Failed to fetch schedules:", error);
+        setSchedules([]);
       } finally {
         setLoading(false);
       }
@@ -244,35 +243,6 @@ export default function ScheduleManagement() {
             <h1 className={styles.title}>Schedule Management</h1>
             <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
               Loading schedules...
-            </div>
-          </div>
-        </main>
-        <ToastContainer position="top-right" autoClose={3000} theme="colored" />
-      </>
-    );
-  }
-
-  if (error) {
-    return (
-      <>
-        <main className={styles.scheduleMain}>
-          <div className={styles.container}>
-            <h1 className={styles.title}>Schedule Management</h1>
-            <div style={{ textAlign: 'center', padding: '2rem', color: '#F44336' }}>
-              {error}
-              <button 
-                onClick={() => window.location.reload()}
-                style={{ 
-                  marginLeft: '1rem', 
-                  padding: '0.5rem 1rem', 
-                  background: '#047857', 
-                  color: 'white', 
-                  border: 'none', 
-                  borderRadius: '0.5rem' 
-                }}
-              >
-                Retry
-              </button>
             </div>
           </div>
         </main>
