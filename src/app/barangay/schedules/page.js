@@ -5,8 +5,6 @@ import { useState, useEffect } from 'react';
 import api from "../../../lib/axios";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
-import { requireRole } from "../../../lib/auth";
-import { useRouter } from "next/navigation";
 
 function getNextPickupFromDay(dayString) {
   const today = new Date();
@@ -114,35 +112,31 @@ function getNextMonthly(dayName, nth = 1) {
 }
 
 export default function ScheduleManagement() {
-  const router = useRouter();
   const [selectedBarangay, setSelectedBarangay] = useState('');
   const [schedules, setSchedules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const [showEditModal, setShowEditModal] = useState(false);
   const [modalData, setModalData] = useState(null);
   const [editDay, setEditDay] = useState('');
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    const checkAuthentication = async () => {
-      const user = await requireRole(router, 'barangay', '/home');
-      if (!user) toast.error("Barangay access required.");
-    };
-    checkAuthentication();
-  }, [router]);
-
   // Fetch schedules from backend
   useEffect(() => {
     const fetchSchedules = async () => {
+      //const authToken = getCookie("authToken");
       try {
         setLoading(true);
         const response = await api.get("/api/admin/schedules", {
-          withCredentials: true
+          headers: {
+            // 'Authorization': `Bearer ${authToken}`,
+          },
         });
         setSchedules(response.data);
+        setError('');
       } catch (error) {
-        console.error("Failed to fetch schedules:", error);
-        setSchedules([]);
+        setError("Failed to fetch schedules. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -188,9 +182,15 @@ export default function ScheduleManagement() {
 
   function openEditModal(scheduleId, typeId) {
     const schedDoc = schedules.find(s => s._id === scheduleId);
-    if (!schedDoc) { toast.error("Schedule not found."); return; }
+    if (!schedDoc) {
+      toast.error("Schedule not found.");
+      return;
+    }
     const typeDoc = Array.isArray(schedDoc.type) ? schedDoc.type.find(t => t._id === typeId) : null;
-    if (!typeDoc) { toast.error("Schedule type not found."); return; }
+    if (!typeDoc) {
+      toast.error("Schedule type not found.");
+      return;
+    }
     setModalData({
       scheduleId,
       typeId,
@@ -205,11 +205,13 @@ export default function ScheduleManagement() {
   async function submitEdit() {
     if (!modalData) return;
     const trimmed = String(editDay || "").trim();
-    if (!trimmed) { toast.warn("Schedule cannot be empty."); return; }
+    if (!trimmed) {
+      toast.warn("Schedule cannot be empty.");
+      return;
+    }
     if (trimmed === modalData.currentDay) {
       toast.info("No changes made.");
       setShowEditModal(false);
-      setModalData(null);
       return;
     }
     try {
@@ -218,12 +220,19 @@ export default function ScheduleManagement() {
         barangay: modalData.barangay,
         typeName: modalData.typeName,
         newDay: trimmed
-      }, { withCredentials: true });
-      setSchedules(prev => prev.map(s =>
-        s._id === modalData.scheduleId
-          ? { ...s, type: s.type.map(t => t._id === modalData.typeId ? { ...t, day: trimmed } : t) }
-          : s
-      ));
+      });
+      setSchedules(prev =>
+        prev.map(s =>
+          s._id === modalData.scheduleId
+            ? {
+                ...s,
+                type: s.type.map(t =>
+                  t._id === modalData.typeId ? { ...t, day: trimmed } : t
+                )
+              }
+            : s
+        )
+      );
       toast.success("Schedule updated successfully.");
       setShowEditModal(false);
       setModalData(null);
@@ -243,6 +252,35 @@ export default function ScheduleManagement() {
             <h1 className={styles.title}>Schedule Management</h1>
             <div style={{ textAlign: 'center', padding: '2rem', color: '#666' }}>
               Loading schedules...
+            </div>
+          </div>
+        </main>
+        <ToastContainer position="top-right" autoClose={3000} theme="colored" />
+      </>
+    );
+  }
+
+  if (error) {
+    return (
+      <>
+        <main className={styles.scheduleMain}>
+          <div className={styles.container}>
+            <h1 className={styles.title}>Schedule Management</h1>
+            <div style={{ textAlign: 'center', padding: '2rem', color: '#F44336' }}>
+              {error}
+              <button 
+                onClick={() => window.location.reload()}
+                style={{ 
+                  marginLeft: '1rem', 
+                  padding: '0.5rem 1rem', 
+                  background: '#047857', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '0.5rem' 
+                }}
+              >
+                Retry
+              </button>
             </div>
           </div>
         </main>
@@ -349,49 +387,38 @@ export default function ScheduleManagement() {
         </div>
       </main>
       <ToastContainer position="top-right" autoClose={3000} theme="colored" />
-
-     {showEditModal && modalData && (
-       <div className={styles.editModalOverlay}>
-         <div className={styles.editModal} role="dialog" aria-modal="true" aria-labelledby="edit-modal-title">
-           <div className={styles.editModalHeader}>
-             <h3 id="edit-modal-title" style={{ margin: 0 }}>
-               Edit schedule for {modalData.typeName} — {modalData.barangay}
-             </h3>
-             <button
-               className={styles.closeBtn}
-               onClick={() => { setShowEditModal(false); setModalData(null); }}
-               aria-label="Close"
-             >
-               ×
-             </button>
-           </div>
-           <div className={styles.editModalBody}>
-             <label htmlFor="edit-day" style={{ fontWeight: 700, marginBottom: 8, display: 'block' }}>
-               Schedule
-             </label>
-             <input
-               id="edit-day"
-               value={editDay}
-               onChange={(e) => setEditDay(e.target.value)}
-               className={styles.input}
-               placeholder="e.g. Monday, Wednesday, Friday"
-             />
-           </div>
-           <div className={styles.editModalActions}>
-             <button
-               className={styles.buttonSecondary}
-               onClick={() => { setShowEditModal(false); setModalData(null); }}
-               disabled={saving}
-             >
-               Cancel
-             </button>
-             <button className={styles.buttonPrimary} onClick={submitEdit} disabled={saving}>
-               {saving ? "Saving…" : "Save"}
-             </button>
-           </div>
-         </div>
-       </div>
-     )}
+      {showEditModal && modalData && (
+        <div className={styles.editModalOverlay}>
+          <div className={styles.editModal}>
+            <div className={styles.editModalHeader}>
+              Edit schedule for {modalData.typeName} — {modalData.barangay}
+            </div>
+            <div className={styles.editModalBody}>
+              <label htmlFor="edit-day" style={{ fontWeight: 700, marginBottom: 8 }}>Schedule</label>
+              <input
+                id="edit-day"
+                value={editDay}
+                onChange={(e) => setEditDay(e.target.value)}
+                className={styles.input}
+                placeholder="e.g. Monday, Wednesday, Friday"
+              />
+            </div>
+            <div className={styles.editModalActions}>
+              <button className={styles.buttonPrimary} onClick={submitEdit} disabled={saving}>
+                {saving ? "Saving…" : "Save"}
+              </button>
+              <button
+                className={styles.buttonSecondary || ''}
+                onClick={() => { setShowEditModal(false); setModalData(null); }}
+                style={{ marginLeft: 12 }}
+                disabled={saving}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
