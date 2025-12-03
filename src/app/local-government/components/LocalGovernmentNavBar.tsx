@@ -18,7 +18,6 @@ export default function LocalGovernmentNavBar() {
     { name: "Dashboard", href: "/local-government/dashboard", icon: "fas fa-gauge" },
     { name: "Schedules", href: "/local-government/schedules", icon: "fas fa-calendar-alt" },
     { name: "Reports", href: "/local-government/reports", icon: "fas fa-clipboard-list" },
-    { name: "Waste Log", href: "/local-government/wastelog", icon: "fas fa-recycle" },
     { name: "Challenges", href: "/local-government/challenges", icon: "fas fa-trophy" },
     { name: "Community", href: "/local-government/community", icon: "fas fa-people-group" },
     { name: "User Management", href: "/local-government/users", icon: "fas fa-users" },

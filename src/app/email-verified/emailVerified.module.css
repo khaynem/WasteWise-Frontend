@@ -1,0 +1,124 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f3fff7 0%, #e6f7f1 100%);
+  padding: 2rem;
+}
+
+.card {
+  background: white;
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 40px rgba(4, 120, 87, 0.15);
+  max-width: 500px;
+  width: 100%;
+  padding: 3rem 2.5rem;
+  text-align: center;
+}
+
+.iconContainer {
+  margin-bottom: 1.5rem;
+}
+
+.logo {
+  width: 80px;
+  height: 80px;
+  border-radius: 1rem;
+  box-shadow: 0 4px 16px rgba(4, 120, 87, 0.2);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.checkmark {
+  font-size: 4rem;
+  color: #047857;
+  animation: scaleIn 0.5s ease-out;
+}
+
+.infomark {
+  font-size: 4rem;
+  color: #0891b2;
+  animation: scaleIn 0.5s ease-out;
+}
+
+@keyframes scaleIn {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #047857;
+  margin: 0;
+}
+
+.message {
+  font-size: 1.1rem;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.actions {
+  margin-top: 1rem;
+}
+
+.button {
+  display: inline-block;
+  background: #047857;
+  color: white;
+  padding: 0.875rem 2.5rem;
+  border-radius: 0.75rem;
+  font-weight: 600;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 16px rgba(4, 120, 87, 0.3);
+}
+
+.button:hover {
+  background: #065f46;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(4, 120, 87, 0.4);
+}
+
+.redirect {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .card {
+    padding: 2rem 1.5rem;
+  }
+
+  .title {
+    font-size: 1.5rem;
+  }
+
+  .message {
+    font-size: 1rem;
+  }
+
+  .checkmark,
+  .infomark {
+    font-size: 3rem;
+  }
+}

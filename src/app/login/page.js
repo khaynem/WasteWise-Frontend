@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import styles from './login.module.css';
@@ -187,6 +187,119 @@ export default function Login() {
     }, 250);
   };
 
+  useEffect(() => {
+    const initGoogle = () => {
+      if (window.google && process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+        window.google.accounts.id.initialize({
+          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+          callback: async (resp) => {
+            if (!resp?.credential) return;
+            
+            // Clear auth cache before making request
+            clearAuthCache();
+            
+            setIsLoading(true);
+            try {
+              console.log('Sending Google auth request with action:', activeTab);
+              
+              const r = await api.post('/api/auth/google', { 
+                id_token: resp.credential, 
+                action: activeTab 
+              }, { 
+                withCredentials: true 
+              });
+              
+              console.log('Google auth response:', r.data);
+              
+              if (r.data?.code === 200) {
+                // Clear cache again after successful auth
+                clearAuthCache();
+                
+                const successMessage = activeTab === 'create' 
+                  ? 'Account created with Google!' 
+                  : 'Signed in with Google!';
+                toast.success(successMessage);
+                
+                const role = r.data.role;
+                console.log('Redirecting user with role:', role);
+                
+                const roleRoutes = {
+                  admin: '/admin/adashboard',
+                  user: '/', 
+                  barangay: '/barangay/dashboard',
+                  business: '/businesses/dashboard',   
+                  businesses: '/businesses/dashboard',
+                  'non-government': '/non-government/dashboard',
+                  'local-government': '/local-government/dashboard'
+                };
+                
+                const target = roleRoutes[role] || `/${role}/dashboard`;
+                console.log('Redirecting to:', target);
+                
+                // Small delay to ensure cookie is set
+                setTimeout(() => {
+                  router.push(target);
+                }, 400);
+                
+                return;
+              } else {
+                toast.error(r.data?.message || 'Google authentication failed');
+              }
+            } catch (err) {
+              console.error('Google authentication error:', err);
+              
+              const errorMessage = err.response?.data?.message;
+              
+              if (err.response?.status === 409) {
+                // Account already exists (during create action)
+                toast.error(errorMessage || 'This email already has an account. Please use Sign In instead.');
+                // Auto-switch to sign in tab
+                setTimeout(() => setActiveTab('signin'), 2000);
+              } else if (err.response?.status === 404) {
+                // No account found (during signin action)
+                toast.error(errorMessage || 'No account found with this email. Please create an account first.');
+                // Auto-switch to create account tab
+                setTimeout(() => setActiveTab('create'), 2000);
+              } else if (err.response?.status === 403) {
+                // Account is inactive
+                toast.error(errorMessage || 'Your account is not active. Please contact support.');
+              } else {
+                // Generic error
+                toast.error(errorMessage || 'Google authentication failed. Please try again.');
+              }
+            } finally {
+              setIsLoading(false);
+            }
+          }
+        });
+
+        const el = document.getElementById('googleSignInDiv');
+        if (el && (activeTab === 'create' || activeTab === 'signin')) {
+          el.innerHTML = '';
+          window.google.accounts.id.renderButton(el, { 
+            theme: 'outline', 
+            size: 'large',
+            text: activeTab === 'create' ? 'signup_with' : 'signin_with'
+          });
+        }
+      }
+    };
+
+    if (!window.google) {
+      const script = document.createElement('script');
+      script.src = 'https://accounts.google.com/gsi/client';
+      script.async = true;
+      script.id = 'google-identity-script';
+      document.body.appendChild(script);
+      script.onload = initGoogle;
+      return () => {
+        if (script.parentNode) script.parentNode.removeChild(script);
+      };
+    } else {
+      initGoogle();
+    }
+  }, [activeTab, router]);
+
   return (
     <>
       <div className={styles.container}>
@@ -341,25 +454,22 @@ export default function Login() {
                 {isLoading ? 'Please wait...' : (activeTab === 'signin' ? 'Sign In' : 'Create Account')}
               </button>
 
-              {activeTab === 'signin' && (
-                <div className={styles.termsNotice}>
-                  <span>By continuing, you agree to our </span>
-                  <button
-                    type="button"
-                    className={styles.termsLink}
-                    onClick={handleTermsClick}
-                  >
-                    Terms of Service and Privacy Policy
-                  </button>
-                  <span>.</span>
-                </div>
-              )}
+              <div className={styles.orDividerDashed}>
+                <span className={styles.dash} />
+                <span className={styles.orText}>
+                  {activeTab === 'create' ? 'or Create Account using' : 'or Sign In with'}
+                </span>
+                <span className={styles.dash} />
+              </div>
+
+              <div id="googleSignInDiv" style={{ display: 'flex', justifyContent: 'center', marginTop: 8 }} />
             </form>
           </div>
         </div>
       </div>
-      <TermsModal open={showTermsModal} onClose={() => setShowTermsModal(false)} />
+
       <ToastContainer position="top-right" autoClose={3000} theme="colored" />
+      <TermsModal open={showTermsModal} onClose={() => setShowTermsModal(false)} />
     </>
   );
 }

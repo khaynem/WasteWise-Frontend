@@ -32,15 +32,124 @@
   color: #CFFFE3;
 }
 
-/* Layout */
-.columns {
+/* Analytics Container Layout */
+.analyticsContainer {
   width: 100%;
   max-width: 1400px;
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: 1.8fr 1fr;
+  gap: 24px;
   align-items: start;
-  margin-top: 3rem;
+  margin-top: 2rem;
+  padding: 0 1rem;
+}
+
+.analyticsPanel, .leaderboardPanel {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(4,120,87,0.10);
+  overflow: hidden;
+}
+
+.panelHeader {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+  color: white;
+  padding: 1.5rem 1.75rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.panelTitle {
+  font-size: 1.35rem;
+  font-weight: 700;
+  margin: 0;
+  display: flex;
+  align-items: center;
+}
+
+.chartContainer {
+  padding: 2rem 1.75rem;
+}
+
+.barChartWrapper {
+  margin-bottom: 2rem;
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 1.5rem;
+}
+
+.emptyChart {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.statCard {
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.statIcon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.statContent {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.statLabel {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.leaderboardContainer {
+  padding: 1.5rem 1.75rem;
+}
+
+.leaderboardInfo {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .whiteContainer {
@@ -753,28 +862,25 @@
     margin-left: 0;
     width: 100%;
     padding-bottom: 2rem;
+    margin-top: 60px;
   }
   .header {
     padding: 2rem 0 1.25rem 0;
   }
-  .columns {
+  .analyticsContainer {
     grid-template-columns: 1fr;
-    gap: 28px;
-    margin-top: 2.5rem;
+    gap: 24px;
+    margin-top: 2rem;
   }
-  .leftContainer,
-  .rightColumn,
-  .whiteContainer {
-    max-height: none;
+  .panelHeader {
+    flex-direction: column;
+    align-items: flex-start;
   }
-  .previousLogsHeaderRow {
-    top: 60px;
+  .chartContainer {
+    padding: 1.5rem 1.25rem;
   }
-  .leaderboardHeader {
-    top: 0;
-  }
-  .chartCanvasWrap {
-    height: clamp(260px, 48vw, 400px);
+  .leaderboardContainer {
+    padding: 1.25rem 1.5rem;
   }
 }
 

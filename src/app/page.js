@@ -174,6 +174,13 @@ export default function Page() {
   const [loading, setLoading] = useState(false);
   const imageInputRef = useRef();
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [stats, setStats] = useState({
+    reports: 0,
+    challengesCompleted: 0,
+    listings: 0,
+    wastelogs: 0,
+  });
+  const [userId, setUserId] = useState(null);
 
   const router = useRouter();
 
@@ -227,6 +234,83 @@ export default function Page() {
     };
     loadSchedules();
   }, []);
+
+  // Get user info on mount
+  useEffect(() => {
+    async function getUser() {
+      const user = await requireAuth(router, '/home');
+      if (user && (user._id || user.id)) {
+        setUserId(user._id || user.id);
+      }
+    }
+    getUser();
+  }, [router]);
+
+  // Fetch stats when userId is available
+  useEffect(() => {
+    async function fetchStats() {
+      if (!userId) return;
+      
+      try {
+        // Fetch all data in parallel
+        const [reportsRes, challengesRes, listingsRes, wastelogsRes] = await Promise.all([
+          api.get("/api/user/reports", { withCredentials: true }),
+          api.get("/api/user/challenges", { withCredentials: true }),
+          api.get("/api/listings", { withCredentials: true }),
+          api.get("/api/user/wastelogs", { withCredentials: true })
+        ]);
+
+        // 1. Reports - count total reports from user
+        const reportsCount = Array.isArray(reportsRes.data) ? reportsRes.data.length : 0;
+
+        // 2. Challenges - count only completed challenges
+        const challengesArr = Array.isArray(challengesRes.data) ? challengesRes.data : [];
+        const challengesCompleted = challengesArr.filter(c => c.completed === true).length;
+
+        // 3. Listings - filter by current user ID
+        const listingsArr = Array.isArray(listingsRes.data) ? listingsRes.data : [];
+        const ownListings = listingsArr.filter(l => {
+          const ownerId = l.user || l.seller;
+          return ownerId && String(ownerId) === String(userId);
+        }).length;
+
+        // 4. Waste logs - count from wasteLogs array
+        const wastelogsData = wastelogsRes.data;
+        let wastelogsCount = 0;
+        
+        if (Array.isArray(wastelogsData)) {
+          wastelogsCount = wastelogsData.length;
+        } else if (wastelogsData && Array.isArray(wastelogsData.wasteLogs)) {
+          wastelogsCount = wastelogsData.wasteLogs.length;
+        }
+
+        console.log('Stats loaded:', {
+          reports: reportsCount,
+          challenges: challengesCompleted,
+          listings: ownListings,
+          wastelogs: wastelogsCount
+        });
+
+        setStats({
+          reports: reportsCount,
+          challengesCompleted,
+          listings: ownListings,
+          wastelogs: wastelogsCount,
+        });
+      } catch (error) {
+        console.error('Failed to fetch stats:', error);
+        // Keep stats at 0 on error
+        setStats({
+          reports: 0,
+          challengesCompleted: 0,
+          listings: 0,
+          wastelogs: 0,
+        });
+      }
+    }
+    
+    fetchStats();
+  }, [userId]);
 
   // Get unique barangay names from API data
   const barangays = useMemo(() => {
@@ -377,15 +461,18 @@ export default function Page() {
     setShowSuggest(false);
   }
 
+  // Scroll to top on mount
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, []);
+
   return (
     <main
       style={{
         background: "#F3FFF7",
         minHeight: "100vh",
-        // Offset for fixed left sidebar on desktop
         marginLeft: isMobile ? 0 : `${SIDEBAR_WIDTH}px`,
         width: isMobile ? "100%" : `calc(100% - ${SIDEBAR_WIDTH}px)`,
-        // Offset for fixed top header on mobile
         paddingTop: isMobile ? `${TOPNAV_HEIGHT + 16}px` : "2rem",
         paddingLeft: isMobile ? "1rem" : "2rem",
         paddingRight: isMobile ? "1rem" : "2rem",
@@ -397,80 +484,8 @@ export default function Page() {
         transition: "margin-left 0.2s ease, width 0.2s ease, padding 0.2s ease",
       }}
     >
-      <style>{`
-        .custom-select-wrapper { position: relative; width: 100%; max-width: 340px; }
-        .custom-select-wrapper select {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23047857' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-          background-repeat: no-repeat; background-position: right 1rem center; background-size: 1.2em;
-        }
-        @media (max-width: 900px) {
-          .custom-select-wrapper select { background-position: right 0.8rem center; padding-right: 2.5rem; }
-        }
-        @media (max-width: 600px) {
-          .custom-select-wrapper select { background-position: right 0.6rem center; padding-right: 2.2rem; }
-        }
-
-        /* Dashboard Recycling Locator styles */
-        .dash-locator-grid { display: grid; grid-template-columns: 320px 1fr; gap: 12px; align-items: stretch; }
-        @media (max-width: 900px) { .dash-locator-grid { grid-template-columns: 1fr; } }
-
-        .dash-search-wrap { position: relative; }
-        .dash-search-row { position: relative; display: flex; align-items: center; margin: 8px 0 6px 0; }
-        .dash-search-input {
-          width: 100%; padding: 0.55rem 2.1rem 0.55rem 0.7rem; border: 1px solid #e5e7eb; border-radius: 10px;
-          background: #ffffff; color: #0f172a; outline: none; transition: border-color 0.15s, box-shadow 0.15s;
-        }
-        .dash-search-input:focus { border-color: #10b981; box-shadow: 0 0 0 3px rgba(16,185,129,0.15); }
-        .dash-clear-btn { position: absolute; right: 8px; background: transparent; border: none; color: #64748b; font-size: 1.2rem; line-height: 1; cursor: pointer; padding: 2px 6px; border-radius: 6px; }
-        .dash-clear-btn:hover { background: #f1f5f9; color: #0f172a; }
-
-        .dash-suggest {
-          position: absolute;
-          top: calc(100% + 6px);
-          left: 0;
-          right: 0;
-          width: 100%;
-          max-height: 220px;
-          overflow-y: auto;
-          border: 1px solid #e5e7eb;
-          border-radius: 10px;
-          background: #ffffff;
-          box-shadow: 0 12px 24px rgba(4,120,87,0.12);
-          list-style: none;
-          padding: 6px;
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-          scrollbar-width: thin;
-          scrollbar-color: #10b981 #f3f4f6;
-        }
-        .dash-suggest::-webkit-scrollbar { width: 10px; }
-        .dash-suggest::-webkit-scrollbar-track { background: #f3f4f6; border-radius: 10px; }
-        .dash-suggest::-webkit-scrollbar-thumb { background-color: #10b981; border-radius: 10px; border: 2px solid #f3f4f6; }
-        .dash-suggest::-webkit-scrollbar-thumb:hover { background-color: #059669; }
-
-        .dash-suggest-item {
-          width: 100%;
-          text-align: left;
-          background: #ffffff;
-          border: 1px solid #e5e7eb;
-          border-radius: 8px;
-          padding: 8px 10px;
-          cursor: pointer;
-          transition: background 0.15s, border-color 0.15s;
-        }
-        .dash-suggest-item:hover { background: #f0fff5; border-color: #86efac; }
-        .dash-suggest-name { font-weight: 700; color: #065f46; font-size: 0.95rem; margin-bottom: 2px; }
-        .dash-suggest-addr { font-size: 0.85rem; color: #475569; }
-
-        /* Compact spacing on narrow screens */
-        @media (max-width: 768px) {
-          .section-responsive { padding: 1.1rem !important; }
-          .flex-wrap-responsive { gap: 0.9rem !important; }
-        }
-      `}</style>
-
       <div className="main-container" style={{ width: "100%", maxWidth: "1100px", display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+        {/* Hero section */}
         <section className="section-responsive"
           style={{
             background: "white",
@@ -550,322 +565,346 @@ export default function Page() {
           </div>
         </section>
 
-        <div className="flex-wrap-responsive" style={{ display: "flex", gap: "1.2rem", flexWrap: "wrap" }}>
-          <section className="section-responsive"
-            style={{
+        {/* Statistic Cards Section - now inside main container */}
+        <div style={{
+          width: "100%",
+        }}>
+          <div style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: ".7rem",
+          }}>
+            {/* Total Reports Created */}
+            <div style={{
               background: "white",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-              borderRadius: "1.1rem",
-              padding: "1.5rem 2rem",
-              minWidth: "260px",
-              flex: 1,
-              position: "relative",
+              borderRadius: "12px",
+              padding: "1.5rem",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
               display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
-                <i className="fa-solid fa-calendar-week" style={{ fontSize: "1.3rem", color: "#047857" }}></i>
-                <span style={{ fontWeight: "bold", fontSize: "1.1rem", color: "#222" }}>
-                  Collection Schedule
-                </span>
+              alignItems: "center",
+              gap: "1rem",
+            }}>
+              <div style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                background: "#3b82f6",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: "1.5rem",
+                flexShrink: 0,
+              }}>
+                <i className="fas fa-file-alt"></i>
               </div>
-              <Link href="/schedules" style={{ color: "#047857", fontWeight: "bold", textDecoration: "underline", fontSize: "0.95rem" }}>
-                View All
-              </Link>
-            </div>
-            <div 
-              style={{ margin: "1.1rem 0 1.2rem 0", fontSize: "1rem", color: "#555" }}>
-              Select Barangay
-            </div>
-            <div
-              className="custom-select-wrapper"
-              tabIndex={-1}
-              style={{ marginBottom: "1.2rem" }}
-            >
-              <select
-                aria-label="Barangay Selection"
-                value={selectedBarangay}
-                onChange={e => {
-                  setSelectedBarangay(e.target.value);
-                  setDropdownOpen(false);
-                }}
-                style={{
-                  background: "white",
-                  border: "1px solid #d1d5db",
-                  borderRadius: "0.8rem",
-                  padding: "0.6rem 2.5rem 0.6rem 1.2rem",
-                  fontSize: "0.95rem",
-                  outline: "none",
-                  width: "100%",
-                  maxWidth: "340px",
-                  color: selectedBarangay ? "#222" : "#888",
-                  boxSizing: "border-box",
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  MozAppearance: "none",
-                  lineHeight: "1.2",
-                  cursor: "pointer",
-                  backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23047857\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")',
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 1rem center",
-                  backgroundSize: "1.2em"
-                }}
-                onFocus={() => setDropdownOpen(true)}
-                onBlur={() => setDropdownOpen(false)}
-              >
-                <option value="" disabled>
-                  Select Barangay
-                </option>
-                {barangays.map(b => (
-                  <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-              {(selectedBarangay && barangaySchedules.length > 0 ? barangaySchedules : []).map((s, index) => (
-                <div
-                  key={`${s.type}-${index}`}
-                  style={{
-                    background: s.color + "22",
-                    borderRadius: "1.2rem",
-                    padding: "1rem",
-                    display: "flex",
-                    flexDirection: "column",
-                    boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
-                    gap: "0.4rem",
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <div style={{ fontWeight: "bold", fontSize: "1rem", color: s.color }}>
-                      {s.type}
-                    </div>
-                    <div style={{ fontWeight: "bold", color: s.color, fontSize: "0.95rem" }}>
-                      Next: {s.next.daysLeft}{s.next.dateStr ? ` (${s.next.dateStr})` : ""}
-                    </div>
-                  </div>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.15rem" }}>
-                    <div style={{ fontSize: "0.95rem", color: "#555" }}>
-                      {s.schedule}
-                    </div>
-                  </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "0.95rem", color: "#6b7280", fontWeight: 500, marginBottom: "0.25rem" }}>
+                  Total Reports Created
                 </div>
-              ))}
-              {(!selectedBarangay || barangaySchedules.length === 0) && (
-                <div style={{ color: "#888", fontSize: "0.95rem", textAlign: "center", marginTop: "1.2rem" }}>
-                  Please select a barangay to view schedule.
+                <div style={{ fontSize: "2rem", fontWeight: "bold", color: "#1f2937" }}>
+                  {stats.reports}
                 </div>
-              )}
+              </div>
             </div>
-          </section>
-
-          {/* Recycling Locator card */}
-          <section className="section-responsive"
-            style={{
+            {/* Challenges Completed */}
+            <div style={{
               background: "white",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-              borderRadius: "1.1rem",
-              padding: "1.5rem 2rem",
-              minWidth: "260px",
-              flex: 1,
-              position: "relative",
+              borderRadius: "12px",
+              padding: "1.5rem",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
               display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
-                <i className="fa-solid fa-map-location-dot" style={{ fontSize: "1.3rem", color: "#2196F3" }}></i>
-                <span style={{ fontWeight: "bold", fontSize: "1.1rem", color: "#222" }}>
-                  Recycling Locator
-                </span>
+              alignItems: "center",
+              gap: "1rem",
+            }}>
+              <div style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                background: "#10b981",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: "1.5rem",
+                flexShrink: 0,
+              }}>
+                <i className="fas fa-check-circle"></i>
               </div>
-              <Link href="/locators" style={{ color: "#2196F3", fontWeight: "bold", textDecoration: "underline", fontSize: "0.95rem" }}>
-                View More
-              </Link>
-            </div>
-            <div style={{ margin: "1.1rem 0 0.8rem 0", fontSize: "1rem", color: "#555" }}>
-              Find nearby recycling centers and drop-off points
-            </div>
-
-            {/* Search bar */}
-            <div className="dash-search-wrap">
-              <div className="dash-search-row">
-                <input
-                  type="text"
-                  className="dash-search-input"
-                  placeholder="Search by name, address, or phone…"
-                  aria-label="Search junkshops"
-                  value={locQuery}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setLocQuery(v);
-                    setShowSuggest(Boolean(v.trim()));
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      focusFirstMatch();
-                    }
-                  }}
-                  onFocus={() => setShowSuggest(Boolean(locQuery.trim()))}
-                />
-                {locQuery && (
-                  <button
-                    type="button"
-                    className="dash-clear-btn"
-                    aria-label="Clear search"
-                    onClick={() => { setLocQuery(""); setShowSuggest(false); }}
-                    title="Clear"
-                  >
-                    ×
-                  </button>
-                )}
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "0.95rem", color: "#6b7280", fontWeight: 500, marginBottom: "0.25rem" }}>
+                  Challenges Completed
+                </div>
+                <div style={{ fontSize: "2rem", fontWeight: "bold", color: "#1f2937" }}>
+                  {stats.challengesCompleted}
+                </div>
               </div>
-
-              {/* Suggestions (overlay, does not push the map) */}
-              {locQuery && showSuggest && (
-                <ul className="dash-suggest" role="listbox" aria-label="Search results">
-                  {filteredShops.length === 0 ? (
-                    <li style={{ color: "#64748b", padding: "0.4rem 0.2rem", textAlign: "center" }}>
-                      No results for “{locQuery}”.
-                    </li>
-                  ) : (
-                    filteredShops.slice(0, 8).map((shop) => (
-                      <li key={shop.id}>
-                        <button
-                          type="button"
-                          className="dash-suggest-item"
-                          title={shop.address}
-                          onClick={() => selectShop(shop)}
-                        >
-                          <div className="dash-suggest-name">{shop.name}</div>
-                          <div className="dash-suggest-addr">{shop.address}</div>
-                        </button>
-                      </li>
-                    ))
-                  )}
-                  {Array.isArray(suggestions) && suggestions.length > 0 && (
-                    <ul className="dash-suggest">
-                      {suggestions.map((s) => (
-                        <li key={s.id} className="dash-suggest-item">
-                          <button type="button" onClick={() => handleSelectSuggestion(s)}>
-                            <div className="dash-suggest-name">{s.name}</div>
-                            <div className="dash-suggest-addr">{s.address}</div>
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </ul>
-              )}
             </div>
-
-            {/* Map preview */}
-            <div
-              style={{
-                width: "100%",
-                height: "260px",
-                borderRadius: "12px",
-                overflow: "hidden",
-                border: "1px solid #e5e7eb",
-                background: "#fff",
-                marginTop: "10px",
-                position: "relative",
-                zIndex: 0, // ensure map sits below the suggestions stack
-              }}
-            >
-              <MapPreview locations={junkshops} focus={locFocus} zoom={15} deviceLocation={locCoord}/>
+            {/* Own Listings */}
+            <div style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "1.5rem",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              display: "flex",
+              alignItems: "center",
+              gap: "1rem",
+            }}>
+              <div style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                background: "#f59e0b",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: "1.5rem",
+                flexShrink: 0,
+              }}>
+                <i className="fas fa-clipboard-list"></i>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "0.95rem", color: "#6b7280", fontWeight: 500, marginBottom: "0.25rem" }}>
+                  Your Listings
+                </div>
+                <div style={{ fontSize: "2rem", fontWeight: "bold", color: "#1f2937" }}>
+                  {stats.listings}
+                </div>
+              </div>
             </div>
-          </section>
+            {/* Waste Logs */}
+            <div style={{
+              background: "white",
+              borderRadius: "12px",
+              padding: "1.5rem",
+              boxShadow: "0 1px 3px rgba(0,0,0,0.08)",
+              display: "flex",
+              alignItems: "center",
+              gap: "1rem",
+            }}>
+              <div style={{
+                width: "48px",
+                height: "48px",
+                borderRadius: "50%",
+                background: "#4CAF50",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "white",
+                fontSize: "1.5rem",
+                flexShrink: 0,
+              }}>
+                <i className="fas fa-recycle"></i>
+              </div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: "0.95rem", color: "#6b7280", fontWeight: 500, marginBottom: "0.25rem" }}>
+                  Waste Logs
+                </div>
+                <div style={{ fontSize: "2rem", fontWeight: "bold", color: "#1f2937" }}>
+                  {stats.wastelogs}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Report section */}
-        <section className="section-responsive"
-          style={{
-            background: "white",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
-            borderRadius: "1.3rem",
-            padding: "1.5rem 2rem",
-            minHeight: "60px",
-            position: "relative",
-            marginTop: "1.2rem",
-          }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
-              <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: "1.3rem", color: "#F44336" }}></i>
-              <span style={{ fontWeight: "bold", fontSize: "1.1rem", color: "#222" }}>
-                Report Waste Violation
-              </span>
-            </div>
-            <Link href="/reports" style={{ color: "#F44336", fontWeight: "bold", textDecoration: "underline", fontSize: "0.95rem" }}>
-              View Reports
-            </Link>
+        {/* Main container and dashboard sections */}
+        <div className="main-container" style={{ width: "100%", maxWidth: "1100px", display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+
+          <div className="flex-wrap-responsive" style={{ display: "flex", gap: "1.2rem", flexWrap: "wrap" }}>
+            <section className="section-responsive"
+              style={{
+                background: "white",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                borderRadius: "1.1rem",
+                padding: "1.5rem 2rem",
+                minWidth: "260px",
+                flex: 1,
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
+                  <i className="fa-solid fa-calendar-week" style={{ fontSize: "1.3rem", color: "#047857" }}></i>
+                  <span style={{ fontWeight: "bold", fontSize: "1.1rem", color: "#222" }}>
+                    Collection Schedule
+                  </span>
+                </div>
+                <Link href="/schedules" style={{ color: "#047857", fontWeight: "bold", textDecoration: "underline", fontSize: "0.95rem" }}>
+                  View All
+                </Link>
+              </div>
+              <div 
+                style={{ margin: "1.1rem 0 1.2rem 0", fontSize: "1rem", color: "#555" }}>
+                Select Barangay
+              </div>
+              <div
+                className="custom-select-wrapper"
+                tabIndex={-1}
+                style={{ marginBottom: "1.2rem" }}
+              >
+                <select
+                  aria-label="Barangay Selection"
+                  value={selectedBarangay}
+                  onChange={e => {
+                    setSelectedBarangay(e.target.value);
+                    setDropdownOpen(false);
+                  }}
+                  style={{
+                    background: "white",
+                    border: "1px solid #d1d5db",
+                    borderRadius: "0.8rem",
+                    padding: "0.6rem 2.5rem 0.6rem 1.2rem",
+                    fontSize: "0.95rem",
+                    outline: "none",
+                    width: "100%",
+                    maxWidth: "340px",
+                    color: selectedBarangay ? "#222" : "#888",
+                    boxSizing: "border-box",
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
+                    lineHeight: "1.2",
+                    cursor: "pointer",
+                    backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%23047857\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E")',
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 1rem center",
+                    backgroundSize: "1.2em"
+                  }}
+                  onFocus={() => setDropdownOpen(true)}
+                  onBlur={() => setDropdownOpen(false)}
+                >
+                  <option value="" disabled>
+                    Select Barangay
+                  </option>
+                  {barangays.map(b => (
+                    <option key={b} value={b}>{b}</option>
+                  ))}
+                </select>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                {(selectedBarangay && barangaySchedules.length > 0 ? barangaySchedules : []).map((s, index) => (
+                  <div
+                    key={`${s.type}-${index}`}
+                    style={{
+                      background: s.color + "22",
+                      borderRadius: "1.2rem",
+                      padding: "1rem",
+                      display: "flex",
+                      flexDirection: "column",
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                      gap: "0.4rem",
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ fontWeight: "bold", fontSize: "1rem", color: s.color }}>
+                        {s.type}
+                      </div>
+                      <div style={{ fontWeight: "bold", color: s.color, fontSize: "0.95rem" }}>
+                        Next: {s.next.daysLeft}{s.next.dateStr ? ` (${s.next.dateStr})` : ""}
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "0.15rem" }}>
+                      <div style={{ fontSize: "0.95rem", color: "#555" }}>
+                        {s.schedule}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {(!selectedBarangay || barangaySchedules.length === 0) && (
+                  <div style={{ color: "#888", fontSize: "0.95rem", textAlign: "center", marginTop: "1.2rem" }}>
+                    Please select a barangay to view schedule.
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Recycling Locator card */}
+            <section className="section-responsive"
+              style={{
+                background: "white",
+                boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+                borderRadius: "1.1rem",
+                padding: "1.5rem 2rem",
+                minWidth: "260px",
+                flex: 1,
+                position: "relative",
+                display: "flex",
+                flexDirection: "column",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
+                  <i className="fa-solid fa-map-location-dot" style={{ fontSize: "1.3rem", color: "#2196F3" }}></i>
+                  <span style={{ fontWeight: "bold", fontSize: "1.1rem", color: "#222" }}>
+                    Recycling Locator
+                  </span>
+                </div>
+                <Link href="/locators" style={{ color: "#2196F3", fontWeight: "bold", textDecoration: "underline", fontSize: "0.95rem" }}>
+                  View More
+                </Link>
+              </div>
+              <div style={{ margin: "1.1rem 0 0.8rem 0", fontSize: "1rem", color: "#555" }}>
+                Find nearby recycling centers and drop-off points
+              </div>
+
+            
+
+              {/* Map preview */}
+              <div
+                style={{
+                  width: "100%",
+                  height: "260px",
+                  borderRadius: "12px",
+                  overflow: "hidden",
+                  border: "1px solid #e5e7eb",
+                  background: "#fff",
+                  marginTop: "10px",
+                  position: "relative",
+                  zIndex: 0, // ensure map sits below the suggestions stack
+                }}
+              >
+                <MapPreview locations={junkshops} focus={locFocus} zoom={15} deviceLocation={locCoord}/>
+              </div>
+            </section>
           </div>
-          <form style={{ marginTop: "1.2rem", display: "flex", flexDirection: "column", gap: "1.2rem" }} onSubmit={handleSubmit}>
-            <div>
-              <label style={{ fontWeight: "bold", color: "#222", marginBottom: "0.4rem", display: "block", fontSize: "1rem" }}>
-                Report Title
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={e => setTitle(e.target.value)}
-                placeholder="Enter report title"
-                style={{
-                  width: "100%",
-                  padding: "0.7rem 1rem",
-                  borderRadius: "0.8rem",
-                  border: "1px solid #d1d5db",
-                  fontSize: "0.95rem",
-                  outline: "none",
-                  marginBottom: "0.4rem",
-                  background: "white",
-                  color: "#222",
-                }}
-                required
-              />
+
+          {/* Report section */}
+          <section className="section-responsive"
+            style={{
+              background: "white",
+              boxShadow: "0 4px 16px rgba(0,0,0,0.08)",
+              borderRadius: "1.3rem",
+              padding: "1.5rem 2rem",
+              minHeight: "60px",
+              position: "relative",
+              marginTop: "1.2rem",
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
+                <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: "1.3rem", color: "#F44336" }}></i>
+                <span style={{ fontWeight: "bold", fontSize: "1.1rem", color: "#222" }}>
+                  Report Waste Violation
+                </span>
+              </div>
+              <Link href="/reports" style={{ color: "#F44336", fontWeight: "bold", textDecoration: "underline", fontSize: "0.95rem" }}>
+                View Reports
+              </Link>
             </div>
-            <div>
-              <label style={{ fontWeight: "bold", color: "#222", marginBottom: "0.4rem", display: "block", fontSize: "1rem" }}>
-                Description
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the illegal dumping activity"
-                rows={6}
-                spellCheck
-                aria-label="Report description"
-                style={{
-                  width: "100%",
-                  padding: "0.8rem 1rem",
-                  borderRadius: "0.8rem",
-                  border: "1px solid #d1d5db",
-                  fontSize: "0.95rem",
-                  outline: "none",
-                  marginBottom: "0.4rem",
-                  background: "white",
-                  color: "#222",
-                  lineHeight: 1.5,
-                  minHeight: "100px",
-                  resize: "vertical",
-                  fontFamily: "inherit",
-                }}
-                required
-              />
-            </div>
-            <div style={{ display: "flex", gap: "0.7rem" }}>
-              <div style={{ flex: 1 }}>
+            <form style={{ marginTop: "1.2rem", display: "flex", flexDirection: "column", gap: "1.2rem" }} onSubmit={handleSubmit}>
+              <div>
                 <label style={{ fontWeight: "bold", color: "#222", marginBottom: "0.4rem", display: "block", fontSize: "1rem" }}>
-                  Location
+                  Report Title
                 </label>
                 <input
                   type="text"
-                  value={location}
-                  placeholder="Mark the area on the map"
+                  value={title}
+                  onChange={e => setTitle(e.target.value)}
+                  placeholder="Enter report title"
                   style={{
                     width: "100%",
                     padding: "0.7rem 1rem",
@@ -878,89 +917,141 @@ export default function Page() {
                     color: "#222",
                   }}
                   required
-                  readOnly
                 />
-                <MapInput initialPosition={locCoord} onLocationSelect={handleMapLocationSelect} />
               </div>
-              <div
-                style={{
-                  flex: 1,
-                  border: "2px dashed #e0e0e0",
-                  borderRadius: "1.2rem",
-                  padding: "1rem",
-                  textAlign: "center",
-                  background: "#F9F9F9",
-                  color: "#888",
-                  marginBottom: "0.4rem",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  gap: "0.4rem",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                }}
-                onClick={() => imageInputRef.current.click()}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                tabIndex={0}
-                role="button"
-              >
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  ref={imageInputRef}
-                  onChange={handleImageChange}
+              <div>
+                <label style={{ fontWeight: "bold", color: "#222", marginBottom: "0.4rem", display: "block", fontSize: "1rem" }}>
+                  Description
+                </label>
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Describe the illegal dumping activity"
+                  rows={6}
+                  spellCheck
+                  aria-label="Report description"
+                  style={{
+                    width: "100%",
+                    padding: "0.8rem 1rem",
+                    borderRadius: "0.8rem",
+                    border: "1px solid #d1d5db",
+                    fontSize: "0.95rem",
+                    outline: "none",
+                    marginBottom: "0.4rem",
+                    background: "white",
+                    color: "#222",
+                    lineHeight: 1.5,
+                    minHeight: "100px",
+                    resize: "vertical",
+                    fontFamily: "inherit",
+                  }}
+                  required
                 />
-                <i className="fa-solid fa-camera" style={{ fontSize: "1.3rem", color: "#F44336" }}></i>
-                <div style={{ fontWeight: "bold", color: "#222", fontSize: "0.95rem" }}>
-                  Click to upload or drag and drop
-                </div>
-                <div style={{ fontSize: "0.95rem", color: "#888" }}>
-                  {image ? image.name : "No photo uploaded"}
-                </div>
-                {image && (
-                  <img
-                    src={URL.createObjectURL(image)}
-                    alt="Preview"
+              </div>
+              <div style={{ display: "flex", gap: "0.7rem" }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ fontWeight: "bold", color: "#222", marginBottom: "0.4rem", display: "block", fontSize: "1rem" }}>
+                    Location
+                  </label>
+                  <input
+                    type="text"
+                    value={location}
+                    placeholder="Mark the area on the map"
                     style={{
-                      marginTop: "0.4rem",
-                      maxWidth: "100%",
-                      maxHeight: "120px",
-                      borderRadius: "0.5rem",
+                      width: "100%",
+                      padding: "0.7rem 1rem",
+                      borderRadius: "0.8rem",
+                      border: "1px solid #d1d5db",
+                      fontSize: "0.95rem",
+                      outline: "none",
+                      marginBottom: "0.4rem",
+                      background: "white",
+                      color: "#222",
                     }}
+                    required
+                    readOnly
                   />
-                )}
+                  <MapInput initialPosition={locCoord} onLocationSelect={handleMapLocationSelect} />
+                </div>
+                <div
+                  style={{
+                    flex: 1,
+                    border: "2px dashed #e0e0e0",
+                    borderRadius: "1.2rem",
+                    padding: "1rem",
+                    textAlign: "center",
+                    background: "#F9F9F9",
+                    color: "#888",
+                    marginBottom: "0.4rem",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "0.4rem",
+                    justifyContent: "center",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => imageInputRef.current.click()}
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  tabIndex={0}
+                  role="button"
+                >
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: "none" }}
+                    ref={imageInputRef}
+                    onChange={handleImageChange}
+                  />
+                  <i className="fa-solid fa-camera" style={{ fontSize: "1.3rem", color: "#F44336" }}></i>
+                  <div style={{ fontWeight: "bold", color: "#222", fontSize: "0.95rem" }}>
+                    Click to upload or drag and drop
+                  </div>
+                  <div style={{ fontSize: "0.95rem", color: "#888" }}>
+                    {image ? image.name : "No photo uploaded"}
+                  </div>
+                  {image && (
+                    <img
+                      src={URL.createObjectURL(image)}
+                      alt="Preview"
+                      style={{
+                        marginTop: "0.4rem",
+                        maxWidth: "100%",
+                        maxHeight: "120px",
+                        borderRadius: "0.5rem",
+                      }}
+                    />
+                  )}
+                </div>
               </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "flex-start", marginTop: "0.7rem" }}>
-              <button
-                type="submit"
-                style={{
-                  background: "#F44336",
-                  color: "white",
-                  border: "none",
-                  borderRadius: "0.6rem",
-                  padding: "0.7rem 1.3rem",
-                  fontSize: "0.95rem",
-                  fontWeight: "bold",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "0.5rem",
-                  cursor: "pointer",
-                }}
-                disabled={loading}
-              >
-                <i className="fa-solid fa-paper-plane"></i>
-                {loading ? "Submitting..." : "Submit Report"}
-              </button>
-            </div>
-          </form>
-        </section>
+              <div style={{ display: "flex", justifyContent: "flex-start", marginTop: "0.7rem" }}>
+                <button
+                  type="submit"
+                  style={{
+                    background: "#F44336",
+                    color: "white",
+                    border: "none",
+                    borderRadius: "0.6rem",
+                    padding: "0.7rem 1.3rem",
+                    fontSize: "0.95rem",
+                    fontWeight: "bold",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "0.5rem",
+                    cursor: "pointer",
+                  }}
+                  disabled={loading}
+                >
+                  <i className="fa-solid fa-paper-plane"></i>
+                  {loading ? "Submitting..." : "Submit Report"}
+                </button>
+              </div>
+            </form>
+          </section>
+        </div>
+        <ToastContainer position="top-right" autoClose={3000} theme="colored" style={{ top: isMobile ? TOPNAV_HEIGHT + 8 : 8 }} />
+        <BotpressWidget />
       </div>
-      <ToastContainer position="top-right" autoClose={3000} theme="colored" style={{ top: isMobile ? TOPNAV_HEIGHT + 8 : 8 }} />
-      <BotpressWidget />
     </main>
-    
   );
 }

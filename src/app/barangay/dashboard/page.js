@@ -27,7 +27,7 @@ export default function BarangayDashboard() {
     try {
       const res = await api.get("/api/user/leaderboard", { withCredentials: true })
       const data = res.data
-      setLeaderboard((data.leaderboard || []).map((entry, i) => ({
+      setLeaderboard((data.leaderboard || []).slice(0, 5).map((entry, i) => ({
         rank: entry.placement ?? i + 1,
         name: entry.user?.username || entry.username || "Anonymous",
         score: entry.points ?? 0,
@@ -105,6 +105,8 @@ export default function BarangayDashboard() {
           const found = counts.find(c => c.id === ch.id)
           return { ...ch, submissions: found ? found.submissions : ch.submissions }
         })
+        // Sort by submissions descending and take top 5
+        items = items.sort((a, b) => (b.submissions || 0) - (a.submissions || 0)).slice(0, 5)
         if (mounted) setChallenges(items)
         if (mounted && stats.challengesCount === 0) {
           setStats(prev => ({ ...prev, challengesCount: items.length }))
@@ -123,9 +125,6 @@ export default function BarangayDashboard() {
     load()
     return () => { mounted = false }
   }, [])
-
-  const chartValues = useMemo(() => challenges.map(c => c.submissions ?? 0), [challenges])
-  const chartLabels = useMemo(() => challenges.map(c => c.name), [challenges])
 
   return (
     <main className={styles.dashboardMain}>
@@ -203,32 +202,6 @@ export default function BarangayDashboard() {
                   </div>
                 ))
               )}
-            </div>
-            <div className={styles.chartWrap}>
-              <div className={styles.chartTitle}>Submissions by Challenge</div>
-              <svg
-                width="100%"
-                height={Math.max(1, chartValues.length) * 36}
-                role="img"
-                aria-label="Challenge submissions chart"
-                className={styles.barChart}
-                preserveAspectRatio="xMinYMin meet"
-                viewBox={`0 0 420 ${Math.max(1, chartValues.length) * 36}`}
-              >
-                {chartValues.map((val, i) => {
-                  const h = 36 * 0.6
-                  const y = i * 36 + (36 - h) / 2
-                  const max = Math.max(...chartValues, 1)
-                  const barW = Math.round((val / max) * (420 - 140))
-                  return (
-                    <g key={i}>
-                      <text x={8} y={y + h / 2 + 4} fontSize="12" fill="#0f172a">{chartLabels[i]}</text>
-                      <rect x={140} y={y} width={barW} height={h} rx={6} className={styles.barRect} />
-                      <text x={140 + barW + 8} y={y + h / 2 + 4} fontSize="12" fill="#0f172a">{val}</text>
-                    </g>
-                  )
-                })}
-              </svg>
             </div>
           </section>
         </div>

@@ -49,7 +49,7 @@ export default function LocalGovernmentDashboard() {
         if (lbRes.status === "fulfilled") {
           const lj = lbRes.value.data
           const src = Array.isArray(lj) ? lj : (Array.isArray(lj?.leaderboard) ? lj.leaderboard : [])
-          lb = src.map((entry, i) => ({
+          lb = src.slice(0, 5).map((entry, i) => ({
             id: entry.user?._id || entry.userId || `${entry.username || 'user'}-${i}`,
             rank: entry.placement ?? i + 1,
             name: entry.user?.username || entry.username || "Anonymous",
@@ -58,7 +58,7 @@ export default function LocalGovernmentDashboard() {
           }))
         }
 
-        const challengesWithCounts = await Promise.all(
+        let challengesWithCounts = await Promise.all(
           baseChallenges.map(async (c, i) => {
             const id = c._id || c.id || `c-${i}`
             let submissions =
@@ -76,6 +76,8 @@ export default function LocalGovernmentDashboard() {
             return { id, name: c.title || c.name || "Untitled", submissions }
           })
         )
+        // Sort by submissions descending and take top 5
+        challengesWithCounts = challengesWithCounts.sort((a, b) => (b.submissions || 0) - (a.submissions || 0)).slice(0, 5)
 
         const statusCounts = allReports.reduce((acc, rep) => {
           const s = String(rep.reportStatus || rep.status || "unknown").toLowerCase()
@@ -238,43 +240,50 @@ export default function LocalGovernmentDashboard() {
 
 function BarChart({ data = [], labels = [], colors = [], width = 720, height = 260 }) {
   const max = Math.max(...data, 1)
-  const padding = { top: 16, right: 20, bottom: 48, left: 28 }
+  const padding = { top: 20, right: 20, bottom: 48, left: 32 }
   const innerW = width - padding.left - padding.right
   const innerH = height - padding.top - padding.bottom
-  const gap = 14
+  const gap = 16
   const barW = innerW / Math.max(1, data.length) - gap
-  const ticks = 4
+  const ticks = 5
   const tickVals = Array.from({ length: ticks + 1 }, (_, i) => Math.round((max / ticks) * i))
 
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ maxWidth: '100%' }}>
       <defs>
         <filter id="barShadow" x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.15" />
+          <feDropShadow dx="0" dy="3" stdDeviation="3" floodOpacity="0.2" />
         </filter>
+        <linearGradient id="gridGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" style={{stopColor: '#f9fafb', stopOpacity: 0.5}} />
+          <stop offset="100%" style={{stopColor: '#ffffff', stopOpacity: 0}} />
+        </linearGradient>
       </defs>
       <g transform={`translate(${padding.left},${padding.top})`}>
         {tickVals.map((t, i) => {
           const y = innerH - (innerH * t) / max
           return (
             <g key={`grid-${i}`}>
-              <line x1={0} y1={y} x2={innerW} y2={y} stroke="rgba(15,23,42,0.08)" strokeWidth="1" />
+              <line x1={0} y1={y} x2={innerW} y2={y} stroke="rgba(15,23,42,0.1)" strokeWidth="1" strokeDasharray="4 4" />
+              <text x={-8} y={y + 4} fontSize="11" textAnchor="end" fill="#6b7280" fontWeight="500">
+                {t}
+              </text>
             </g>
           )
         })}
-        <line x1={0} y1={innerH + 1} x2={innerW} y2={innerH + 1} stroke="rgba(15,23,42,0.18)" strokeWidth="1.5" />
+        <line x1={0} y1={innerH + 1} x2={innerW} y2={innerH + 1} stroke="rgba(15,23,42,0.2)" strokeWidth="2" />
         {data.map((v, i) => {
-          const h = (innerH * v) / max
+          const h = Math.max((innerH * v) / max, 4)
           const x = i * (barW + gap) + gap / 2
           const y = innerH - h
           const fill = colors[i] || '#10b981'
           return (
             <g key={`${labels[i]}-${i}`}>
-              <rect x={x} y={y} width={barW} height={h} rx="8" fill={fill} filter="url(#barShadow)" />
-              <text x={x + barW / 2} y={y - 8} fontSize="12" textAnchor="middle" fill="#0f172a" fontWeight="700">
+              <rect x={x} y={y} width={barW} height={h} rx="10" fill={fill} filter="url(#barShadow)" opacity="0.95" />
+              <text x={x + barW / 2} y={y - 10} fontSize="13" textAnchor="middle" fill="#111827" fontWeight="700">
                 {v.toLocaleString()}
               </text>
-              <text x={x + barW / 2} y={innerH + 22} fontSize="12" textAnchor="middle" fill="#0f172a">
+              <text x={x + barW / 2} y={innerH + 24} fontSize="12" textAnchor="middle" fill="#374151" fontWeight="600">
                 {labels[i]}
               </text>
             </g>

@@ -10,7 +10,8 @@ export default function ConditionalWrapper({ children }) {
   const pathname = usePathname();
   const isAdminRoute = pathname.startsWith("/admin");
   const isStandaloneRoute = pathname.startsWith("/forgot-password") ||
-    pathname.startsWith("/reset-password");
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/email-verified");
 
   const [mounted, setMounted] = useState(false);
 
@@ -23,7 +24,7 @@ export default function ConditionalWrapper({ children }) {
   }
 
   if (isAdminRoute || isStandaloneRoute) {
-    // For admin, forgot-password, and reset-password routes, only render children without navbar/footer/chatbot
+    // For admin, forgot-password, reset-password, and email-verified routes, only render children without navbar/footer/chatbot
     return <>{children}</>;
   }
 

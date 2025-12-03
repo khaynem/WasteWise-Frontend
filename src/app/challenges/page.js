@@ -23,6 +23,10 @@ export default function ChallengesPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const [userRanking, setUserRanking] = useState({ points: 0, rank: "Bronze", placement: null });
+    
+    const [unlockConfirmOpen, setUnlockConfirmOpen] = useState(false);
+    const [tierToUnlock, setTierToUnlock] = useState(null);
+    const [isUnlocking, setIsUnlocking] = useState(false);
 
     const router = useRouter();
 
@@ -50,14 +54,16 @@ export default function ChallengesPage() {
                     description: c.description,
                     instructions: c.instructions,
                     points: Number(c.points) || 0,
+                    tier: c.tier || 'Basic',
                     completed: !!c.completed,
+                    unlocked: !!c.unlocked,
+                    submissionStatus: c.submissionStatus || null,
                     short:
                         (c.description || "").length > 110
                             ? `${c.description.slice(0, 110)}…`
                             : c.description || "",
                     createdAt: c.createdAt ? new Date(c.createdAt).getTime() : Date.now(),
                 }));
-                items.sort((a, b) => b.createdAt - a.createdAt);
                 setChallenges(items);
                 setError("");
             } catch (e) {
@@ -68,6 +74,10 @@ export default function ChallengesPage() {
             }
         };
         load();
+
+        // Poll for updates every 30 seconds to check for approved submissions
+        const interval = setInterval(load, 30000);
+        return () => clearInterval(interval);
     }, []);
 
     // Fetch user's current ranking on mount
@@ -90,6 +100,10 @@ export default function ChallengesPage() {
             }
         };
         fetchUserRanking();
+
+        // Poll for ranking updates every 30 seconds (matches challenge polling)
+        const interval = setInterval(fetchUserRanking, 30000);
+        return () => clearInterval(interval);
     }, []);
 
     // Responsive flag
@@ -124,11 +138,36 @@ export default function ChallengesPage() {
         if (file) setSubmissionImage(file);
     };
 
+    const openUnlockConfirm = (tier) => {
+        setTierToUnlock(tier);
+        setUnlockConfirmOpen(true);
+    };
+
+    const handleUnlockTier = async () => {
+        if (!tierToUnlock) return;
+        
+        try {
+            setIsUnlocking(true);
+            const res = await api.post(`/api/user/challenges/tier/${tierToUnlock}/unlock`, {}, { withCredentials: true });
+            toast.success(`${tierToUnlock} tier unlocked!`);
+            setChallenges(prev => prev.map(c => 
+                c.tier === tierToUnlock ? { ...c, unlocked: true } : c
+            ));
+            setUserRanking(prev => ({ ...prev, points: res.data.newPoints }));
+            setUnlockConfirmOpen(false);
+            setTierToUnlock(null);
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Failed to unlock tier.');
+        } finally {
+            setIsUnlocking(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!selected) return;
-        if (selected.completed) {
-            toast.info("You have already completed this challenge.");
+        if (selected.submissionStatus) {
+            toast.info("You have already submitted this challenge.");
             return;
         }
         if (!submissionImage) {
@@ -157,32 +196,18 @@ export default function ChallengesPage() {
                 }
             );
 
-            const data = res.data;
-
-            // Update ranking from response
-            if (data.ranking) {
-                setUserRanking({
-                    points: data.ranking.points,
-                    rank: data.ranking.rank,
-                    placement: userRanking.placement,
-                });
-            }
-
-            const pointsAwarded = data.pointsAwarded || selected.points || 0;
-
-            // Mark this challenge as completed locally
             setChallenges(prev => prev.map(c => 
-                c.id === selected.id ? { ...c, completed: true } : c
+                c.id === selected.id ? { ...c, submissionStatus: 'Pending' } : c
             ));
-            setSelected(prev => prev ? { ...prev, completed: true } : null);
+            setSelected(prev => prev ? { ...prev, submissionStatus: 'Pending' } : null);
 
-            toast.success(`Challenge completed! +${pointsAwarded} points earned!`);
+            toast.success('Submission received! Awaiting admin approval.');
             setModalOpen(false);
             setSubmissionImage(null);
             setImagePreview(null);
             setSubmissionText("");
         } catch (err) {
-            toast.error(err.message || "Failed to submit entry.");
+            toast.error(err.response?.data?.message || "Failed to submit entry.");
         } finally {
             setIsSubmitting(false);
         }
@@ -198,58 +223,93 @@ export default function ChallengesPage() {
             </header>
 
             <section className={styles.section}>
-                {userRanking.points > 0 && (
-                    <div className={styles.userRankingBadge}>
-                        <i className="fas fa-leaf" aria-hidden="true" /> {userRanking.points} pts
-                        <span className={styles.rankPill} data-tier={userRanking.rank}>
-                            {userRanking.rank}
-                        </span>
-                    </div>
-                )}
+                <div className={styles.userRankingBadge}>
+                    <i className="fas fa-leaf" aria-hidden="true" /> {userRanking.points} pts
+                    <span className={styles.rankPill} data-tier={userRanking.rank}>
+                        {userRanking.rank}
+                    </span>
+                </div>
 
-                <div className={styles.gridWrap}>
-                    {loading ? (
-                        <div className={styles.pageDesc}>Loading challenges...</div>
-                    ) : error ? (
-                        <div className={styles.pageDesc} style={{ color: "#ef4444" }}>
-                            {error}
-                        </div>
-                    ) : challenges.length ? (
-                        <div className={styles.challengeGrid}>
-                            {challenges.map((c) => (
-                                <div 
-                                    key={c.id} 
-                                    className={`${styles.challengeCard} ${c.completed ? styles.challengeCardCompleted : ""}`}
-                                >
-                                    {c.completed && (
-                                        <div className={styles.completedBadge}>
-                                            <i className="fas fa-check-circle" aria-hidden="true" /> Completed
+                {loading ? (
+                    <div className={styles.pageDesc}>Loading challenges...</div>
+                ) : error ? (
+                    <div className={styles.pageDesc} style={{ color: "#ef4444" }}>
+                        {error}
+                    </div>
+                ) : challenges.length === 0 ? (
+                    <div className={styles.pageDesc}>No challenges available.</div>
+                ) : (
+                    <>
+                        {['Basic', 'Intermediate', 'Advanced'].map(tier => {
+                            const tierChallenges = challenges.filter(c => c.tier === tier);
+                            if (tierChallenges.length === 0) return null;
+
+                            const tierUnlocked = tier === 'Basic' || tierChallenges.some(c => c.unlocked);
+                            const tierUnlockCost = tier === 'Intermediate' ? 100 : tier === 'Advanced' ? 250 : 0;
+
+                            return (
+                                <div key={tier} className={styles.tierSection}>
+                                    <h2 className={`${styles.tierTitle} ${styles[`tier${tier}Title`]}`}>
+                                        {tier === 'Basic' && <i className="fas fa-seedling" aria-hidden="true" />}
+                                        {tier === 'Intermediate' && <i className="fas fa-leaf" aria-hidden="true" />}
+                                        {tier === 'Advanced' && <i className="fas fa-trophy" aria-hidden="true" />}
+                                        {tier} Challenges
+                                    </h2>
+
+                                    <div className={`${styles.tierContainer} ${!tierUnlocked ? styles.tierContainerLocked : ''}`}>
+                                        {!tierUnlocked && (
+                                            <div className={styles.unlockOverlay}>
+                                                <div className={styles.unlockOverlayContent}>
+                                                    <i className="fas fa-lock" aria-hidden="true" />
+                                                    <h3>Locked Tier</h3>
+                                                    <p>Unlock to access {tierChallenges.length} challenge{tierChallenges.length !== 1 ? 's' : ''}</p>
+                                                    <button
+                                                        className={styles.unlockTierBtn}
+                                                        onClick={() => openUnlockConfirm(tier)}
+                                                    >
+                                                        <i className="fas fa-unlock-alt" aria-hidden="true" /> Unlock Tier ({tierUnlockCost} pts)
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div className={styles.challengeGrid}>
+                                            {tierChallenges.map((c) => (
+                                                <div 
+                                                    key={c.id} 
+                                                    className={`${styles.challengeCard} ${c.submissionStatus === 'Approved' ? styles.challengeCardCompleted : ''}`}
+                                                >
+                                                    {c.submissionStatus && (
+                                                        <div className={c.submissionStatus === 'Approved' ? styles.approvedBadge : styles.pendingBadge}>
+                                                            <i className="fas fa-check-circle" aria-hidden="true" /> {c.submissionStatus === 'Approved' ? 'Completed' : 'Pending'}
+                                                        </div>
+                                                    )}
+                                                    <h3 className={styles.cardTitle}>{c.title}</h3>
+                                                    <div className={styles.cardPartition} aria-hidden="true" />
+                                                    <p className={styles.cardDesc}>{c.short}</p>
+                                                    <div className={styles.cardBottom}>
+                                                        <span className={styles.pointsBadge}>
+                                                            <i className="fas fa-leaf" aria-hidden="true" />{" "}
+                                                            {c.points} pts
+                                                        </span>
+                                                        <button
+                                                            type="button"
+                                                            className={styles.viewBtn}
+                                                            onClick={() => openChallenge(c)}
+                                                            aria-label={`View ${c.title} challenge`}
+                                                        >
+                                                            {c.submissionStatus === 'Approved' ? "View Details" : "View Challenge"}
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            ))}
                                         </div>
-                                    )}
-                                    <h3 className={styles.cardTitle}>{c.title}</h3>
-                                    <div className={styles.cardPartition} aria-hidden="true" />
-                                    <p className={styles.cardDesc}>{c.short}</p>
-                                    <div className={styles.cardBottom}>
-                                        <span className={styles.pointsBadge}>
-                                            <i className="fas fa-leaf" aria-hidden="true" />{" "}
-                                            {c.points} pts
-                                        </span>
-                                        <button
-                                            type="button"
-                                            className={styles.viewBtn}
-                                            onClick={() => openChallenge(c)}
-                                            aria-label={`View ${c.title} challenge`}
-                                        >
-                                            {c.completed ? "View Details" : "View Challenge"}
-                                        </button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className={styles.pageDesc}>No challenges available.</div>
-                    )}
-                </div>
+                            );
+                        })}
+                    </>
+                )}
             </section>
 
             {modalOpen && selected && (
@@ -299,20 +359,14 @@ export default function ChallengesPage() {
                                     </span>
                                 </div>
 
-                                {selected.completed && (
-                                    <div className={styles.completedAlert}>
-                                        <i className="fas fa-check-circle" aria-hidden="true" />
-                                        <span>You have already completed this challenge!</span>
-                                    </div>
-                                )}
                             </div>
 
                             <div className={styles.modalRight}>
-                                {selected.completed ? (
-                                    <div className={styles.completedMessage}>
-                                        <i className="fas fa-trophy" aria-hidden="true" />
-                                        <h3>Challenge Completed!</h3>
-                                        <p>You've already earned {selected.points} points from this challenge.</p>
+                                {selected.submissionStatus ? (
+                                    <div className={selected.submissionStatus === 'Approved' ? styles.approvedMessage : styles.pendingMessage}>
+                                        <i className="fas fa-check-circle" aria-hidden="true" />
+                                        <h3>{selected.submissionStatus === 'Approved' ? 'Challenge Completed!' : 'Submission Received!'}</h3>
+                                        <p>{selected.submissionStatus === 'Approved' ? `You've earned ${selected.points} points from this challenge!` : 'Your submission is pending review. Points will be awarded once approved.'}</p>
                                     </div>
                                 ) : (
                                     <form className={styles.submitForm} onSubmit={handleSubmit}>
@@ -387,7 +441,55 @@ export default function ChallengesPage() {
                 </div>
             )}
 
-            <ToastContainer
+            {unlockConfirmOpen && tierToUnlock && (
+                <div
+                    className={styles.modalOverlay}
+                    onClick={(e) => e.target === e.currentTarget && !isUnlocking && setUnlockConfirmOpen(false)}
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="unlockTitle"
+                >
+                    <div className={styles.modal}>
+                        <div className={styles.modalHeader}>
+                            <div id="unlockTitle" className={styles.modalTitle}>Unlock {tierToUnlock} Tier</div>
+                            <button
+                                type="button"
+                                className={styles.ghostBtn}
+                                onClick={() => !isUnlocking && setUnlockConfirmOpen(false)}
+                                disabled={isUnlocking}
+                            >
+                                <i className="fas fa-times" aria-hidden="true" /> Close
+                            </button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <p className={styles.confirmText}>
+                                This will cost you <strong>{tierToUnlock === 'Intermediate' ? 100 : 250} points</strong> and unlock all challenges in the {tierToUnlock} tier.
+                            </p>
+                            <p className={styles.confirmText}>
+                                Your current balance: <strong>{userRanking.points} points</strong>
+                            </p>
+                        </div>
+                        <div className={styles.modalActions}>
+                            <button
+                                type="button"
+                                className={styles.buttonPrimary}
+                                onClick={handleUnlockTier}
+                                disabled={isUnlocking}
+                            >
+                                {isUnlocking ? 'Unlocking...' : 'Unlock'}
+                            </button>
+                            <button
+                                type="button"
+                                className={styles.buttonSecondary}
+                                onClick={() => setUnlockConfirmOpen(false)}
+                                disabled={isUnlocking}
+                            >
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}            <ToastContainer
                 position="top-right"
                 autoClose={2500}
                 theme="colored"

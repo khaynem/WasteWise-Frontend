@@ -16,9 +16,12 @@ import { requireAuth } from "../../lib/auth";
 export default function ReportsPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [aiDescription, setAiDescription] = useState(""); // New state for AI description
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [location, setLocation] = useState("");
   const [locCoord, setLocCoord] = useState(null);
   const [image, setImage] = useState(null);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState(null); // Store uploaded URL
   const [loading, setLoading] = useState(false);
   const [reports, setReports] = useState([]);
   const [editingId, setEditingId] = useState(null);
@@ -90,12 +93,51 @@ export default function ReportsPage() {
     });
   }, []);
 
-  function handleImageChange(e) {
+  async function handleImageChange(e) {
     const file = e.target.files[0];
     if (file) {
       setImage(file);
+      setAiDescription("");
+      setUploadedImageUrl(null);
+      
+      // Automatically analyze the image
+      await analyzeImage(file);
     } else {
       setImage(null);
+      setAiDescription("");
+      setUploadedImageUrl(null);
+    }
+  }
+
+  async function analyzeImage(file) {
+    if (!file) return;
+    
+    setIsAnalyzing(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const response = await api.post("/api/user/analyze-image", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true,
+      });
+
+      setAiDescription(response.data.description || "");
+      setUploadedImageUrl(response.data.imageUrl);
+      
+      // Auto-fill description if empty
+      if (!description) {
+        setDescription(response.data.description || "");
+      }
+      
+      toast.success("Image analyzed successfully! You can edit the description.");
+    } catch (error) {
+      console.error("Error analyzing image:", error);
+      toast.error("Failed to analyze image. You can still submit manually.");
+    } finally {
+      setIsAnalyzing(false);
     }
   }
 
@@ -138,13 +180,14 @@ export default function ReportsPage() {
     if (file) {
       setImage(file);
       if (imageInputRef.current) imageInputRef.current.value = "";
+      analyzeImage(file); // Analyze on drop
     }
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
     setLoading(true);
-    //const authToken = getCookie("authToken");
+    
     try {
       const formData = new FormData();
       formData.append("title", title);
@@ -162,11 +205,13 @@ export default function ReportsPage() {
       }
 
       formData.append("date", new Date().toISOString());
+      
+      // If image was already uploaded during analysis, we can skip re-upload
+      // But for consistency, we'll still send it
       if (image) {
         formData.append("image", image);
       }
 
-      // Await the request and capture the response to avoid ReferenceError
       const response = await api.post("/api/user/report", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
@@ -175,20 +220,70 @@ export default function ReportsPage() {
       });
 
       toast.success("Report submitted successfully.");
+      
+      // Reset form
       setTitle("");
       setDescription("");
+      setAiDescription("");
       setLocation("");
       setLocCoord(null); 
       setImage(null);
+      setUploadedImageUrl(null);
       if (imageInputRef.current) imageInputRef.current.value = "";
-      console.log("response.data:", response.data);
-      console.log("locCoord:", locCoord);
+      
+      // Refresh reports list
+      const reportsResponse = await api.get("/api/user/reports", {
+        withCredentials: true,
+      });
+      const sortedReports = reportsResponse.data.sort(
+        (a, b) => new Date(b.date) - new Date(a.date)
+      );
+      setReports(sortedReports);
     } catch (error) {
       toast.error(error?.response?.data?.message || "Failed to submit report. Please try again.");
     } finally {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    async function fetchReports() {
+      try {
+        const response = await api.get("/api/user/reports", {
+          withCredentials: true,
+        });
+        // Sort reports by date, most recent first
+        const sortedReports = response.data.sort(
+          (a, b) => new Date(b.date) - new Date(a.date)
+        );
+        setReports(sortedReports);
+      } catch (error) {
+        console.log(authToken)
+        console.error("Error fetching reports:", error);
+      }
+    }
+    fetchReports();
+  }, []);
+
+  useEffect(() => {
+    getDeviceLocation().then((coords) => {
+      if (!coords) return;
+      const { latitude, longitude } = coords;
+      const latlng = { lat: latitude, lng: longitude };
+      setLocCoord(latlng);
+      fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+      )
+        .then((r) => r.json())
+        .then((data) => {
+          const addr = data?.display_name || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+          setLocation(addr);
+        })
+        .catch(() => {
+          setLocation(`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+        });
+    });
+  }, []);
 
   function startEdit(report) {
     setEditingId(report._id);
@@ -389,15 +484,16 @@ export default function ReportsPage() {
                   fontSize: "1rem",
                 }}
               >
-                Description
+                Description {aiDescription && "(AI-Generated - Edit as needed)"}
               </label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                placeholder="Describe the illegal dumping activity"
+                placeholder={isAnalyzing ? "Analyzing image..." : "Describe the illegal dumping activity"}
                 rows={6}
                 spellCheck
                 aria-label="Report description"
+                disabled={isAnalyzing}
                 style={{
                   width: "100%",
                   padding: "0.8rem 1rem",
@@ -406,7 +502,7 @@ export default function ReportsPage() {
                   fontSize: "0.95rem",
                   outline: "none",
                   marginBottom: "1rem",
-                  background: "white",
+                  background: isAnalyzing ? "#f3f4f6" : "white",
                   color: "#222",
                   lineHeight: 1.5,
                   minHeight: "100px",
@@ -415,6 +511,18 @@ export default function ReportsPage() {
                 }}
                 required
               />
+              {aiDescription && (
+                <div style={{ 
+                  marginBottom: "1rem", 
+                  padding: "0.7rem", 
+                  background: "#e6f7f1", 
+                  borderRadius: "0.5rem",
+                  fontSize: "0.9rem",
+                  color: "#047857"
+                }}>
+                  <strong>AI Suggestion:</strong> {aiDescription}
+                </div>
+              )}
               <div style={{ display: "flex", gap: "0.7rem" }}>
                 <div style={{ flex: 1 }}>
                   <label
@@ -461,6 +569,7 @@ export default function ReportsPage() {
                     border: isDragging ? "2px dashed #047857" : "2px dashed #d1d5db",
                     background: isDragging ? "#e6f7f1" : "white",
                     transition: "background 0.2s, border 0.2s",
+                    opacity: isAnalyzing ? 0.6 : 1,
                   }}
                 >
                   <input
@@ -469,6 +578,7 @@ export default function ReportsPage() {
                     style={{ display: "none" }}
                     ref={imageInputRef}
                     onChange={handleImageChange}
+                    disabled={isAnalyzing}
                   />
                   <i
                     className="fa-solid fa-camera"
@@ -481,7 +591,7 @@ export default function ReportsPage() {
                       fontSize: "0.95rem",
                     }}
                   >
-                    Click to upload or drag and drop
+                    {isAnalyzing ? "Analyzing image..." : "Click to upload or drag and drop"}
                   </div>
                   <div style={{ fontSize: "0.95rem", color: "#888" }}>
                     {image ? image.name : "No photo uploaded"}
@@ -497,6 +607,11 @@ export default function ReportsPage() {
                         borderRadius: "0.5rem",
                       }}
                     />
+                  )}
+                  {isAnalyzing && (
+                    <div style={{ marginTop: "0.5rem", color: "#047857" }}>
+                      <i className="fa-solid fa-spinner fa-spin"></i> Processing...
+                    </div>
                   )}
                 </div>
               </div>

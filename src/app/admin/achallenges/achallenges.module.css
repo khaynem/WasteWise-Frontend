@@ -260,8 +260,7 @@
   color: #047857;
   font-weight: bold;
 }
-.input,
-.textarea {
+.input {
   border: 1px solid #d1d5db;
   border-radius: 10px;
   padding: 0.7rem 0.9rem;
@@ -271,7 +270,47 @@
   font-size: 0.95rem;
   font-family: inherit;
 }
+.input[type="number"] {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  outline: none;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+select.input {
+  padding: 0.75rem 2.5rem 0.75rem 1rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  background-color: white;
+  color: #1f2937;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  appearance: none;
+  transition: all 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23047857' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1.2em;
+}
+select.input:hover,
+select.input:focus {
+  border-color: #047857;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
 .textarea {
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  outline: none;
+  background: #fff;
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-family: inherit;
   resize: vertical;
   min-height: 120px;
   line-height: 1.35;
@@ -350,11 +389,67 @@
 
 .gridWrap {
   width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
 }
+
+.tierSection {
+  background: #f9fafb;
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid #e5e7eb;
+}
+
+.tierHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.tierTitle {
+  font-size: 1.5rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.tierBasicTitle {
+  color: #047857;
+}
+
+.tierIntermediateTitle {
+  color: #d97706;
+}
+
+.tierAdvancedTitle {
+  color: #dc2626;
+}
+
+.tierToggle {
+  background: transparent;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  color: #6b7280;
+  transition: all 0.2s;
+}
+
+.tierToggle:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
 .challengeGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
   gap: 20px;
+  max-height: 800px;
+  overflow-y: auto;
 }
 .challengeCard {
   background: #fff;
@@ -563,8 +658,14 @@
   background: #03624a;
 }
 .submissionBtn:focus-visible {
-  outline: 2px solid #10b981;
+  outline: 2px solid #047857;
   outline-offset: 2px;
+}
+
+.approvedBadge {
+  background: #d1fae5;
+  color: #065f46;
+  border-color: #6ee7b7;
 }
 
 /* Responsive */

@@ -50,6 +50,7 @@
 }
 
 .challengeCard {
+  position: relative;
   background: #fff;
   border-radius: 1.1rem;
   box-shadow: 0 4px 20px rgba(4,120,87,0.12);
@@ -133,33 +134,75 @@
 .modalOverlay {
   position: fixed;
   inset: 0;
-  background: rgba(15,23,42,0.45);
+  background: rgba(0,0,0,0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1001;
-  padding: 1.2rem;
+  z-index: 1002;
+  padding: 16px;
 }
 
 .modal {
-  width: min(1100px, 95vw);
   background: #fff;
-  border-radius: 1.2rem;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.25);
-  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0,0,0,0.2);
+  width: 100%;
+  max-width: 820px;
   display: flex;
   flex-direction: column;
   max-height: 90vh;
+  overflow-y: auto;
 }
 
 .modalHeader {
-  padding: 1rem 1.3rem;
-  font-weight: 700;
-  color: #047857;
-  border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  padding: 16px !important;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modalTitle {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #065f46;
+}
+
+.modalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 20px !important;
+}
+
+.modalActions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  padding: 12px 20px 16px !important;
+}
+
+.ghostBtn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+}
+
+.ghostBtn:hover:not(:disabled) {
+  background: #f1f5f9;
+}
+
+.ghostBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .modalClose {
@@ -471,6 +514,38 @@
   z-index: 1;
 }
 
+.pendingBadge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #f59e0b;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+}
+
+.approvedBadge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #10b981;
+  color: white;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  z-index: 1;
+}
+
 .completedAlert {
   background: #d1fae5;
   border: 1px solid #10b981;
@@ -523,6 +598,301 @@
   font-weight: 500;
 }
 
+.pendingMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+  border-radius: 12px;
+  border: 2px solid #f59e0b;
+  height: 100%;
+}
+
+.pendingMessage i {
+  font-size: 4rem;
+  color: #f59e0b;
+}
+
+.pendingMessage h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #d97706;
+  font-weight: 800;
+}
+
+.pendingMessage p {
+  margin: 0;
+  font-size: 1rem;
+  color: #92400e;
+  font-weight: 500;
+}
+
+.approvedMessage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 20px;
+  text-align: center;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 12px;
+  border: 2px solid #10b981;
+  height: 100%;
+}
+
+.approvedMessage i {
+  font-size: 4rem;
+  color: #10b981;
+}
+
+.approvedMessage h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #047857;
+  font-weight: 800;
+}
+
+.approvedMessage p {
+  margin: 0;
+  font-size: 1rem;
+  color: #065f46;
+  font-weight: 500;
+}
+
+.lockedCard {
+  opacity: 0.7;
+  position: relative;
+}
+
+.lockedBadge {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+  background: #f3f4f6;
+  color: #6b7280;
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: bold;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #d1d5db;
+}
+
+.tierBadge {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  margin-left: 8px;
+  font-weight: bold;
+}
+
+.tierIntermediate {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.tierAdvanced {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.unlockBtn {
+  background: #f59e0b;
+  color: #fff;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.25);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: bold;
+}
+
+.unlockBtn:hover {
+  background: #d97706;
+}
+
+.tierSection {
+  width: 100%;
+  max-width: 1400px;
+  margin-bottom: 3.5rem;
+}
+
+.tierTitle {
+  font-size: 1.8rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0 0 1.25rem 0;
+}
+
+.tierCount {
+  font-size: 1rem;
+  font-weight: normal;
+  color: #6b7280;
+  margin-left: 0.5rem;
+}
+
+.tierContainer {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border: 2px solid #e5e7eb;
+  max-height: 800px;
+  overflow-y: auto;
+}
+
+.tierContainerLocked .challengeGrid {
+  filter: blur(4px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.tierBasicTitle {
+  color: #047857;
+}
+
+.tierIntermediateTitle {
+  color: #d97706;
+}
+
+.tierAdvancedTitle {
+  color: #dc2626;
+}
+
+.unlockOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  border-radius: 16px;
+  pointer-events: none;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(2px);
+}
+
+.unlockOverlayContent {
+  text-align: center;
+  padding: 1.5rem 2rem;
+  max-width: 320px;
+  pointer-events: auto;
+  background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  border: 2px solid #e5e7eb;
+}
+
+.unlockOverlayContent i {
+  font-size: 2.5rem;
+  color: #f59e0b;
+  margin-bottom: 0.75rem;
+  display: block;
+}
+
+.unlockOverlayContent h3 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  color: #1f2937;
+  margin: 0 0 0.5rem 0;
+}
+
+.unlockOverlayContent p {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin: 0 0 1.25rem 0;
+  line-height: 1.4;
+}
+
+.unlockTierBtn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #fff;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 10px;
+  padding: 0.7rem 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(245,158,11,0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: bold;
+  transition: all 0.3s ease;
+}
+
+.unlockTierBtn:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+  box-shadow: 0 6px 20px rgba(245,158,11,0.5);
+  transform: translateY(-2px) scale(1.02);
+}
+
+.confirmText {
+  margin: 0.25rem 0 0.5rem;
+  line-height: 1.45;
+  color: #374151;
+}
+
+.buttonPrimary {
+  background: #047857;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 2px 8px rgba(4,120,87,0.2);
+}
+
+.buttonPrimary:hover:not(:disabled) {
+  background: #03624a;
+}
+
+.buttonPrimary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.buttonSecondary {
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.6rem 1rem;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.buttonSecondary:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.buttonSecondary:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
 @media (max-width: 1000px) {
   .modalContent {
     grid-template-columns: 1fr;
@@ -557,6 +927,34 @@
   .challengeCard {
     padding: 0.95rem 1rem 1.05rem;
   }
+  .tierSection {
+    margin-bottom: 2.5rem;
+  }
+  .tierTitle {
+    font-size: 1.4rem;
+  }
+  .tierContainer {
+    padding: 1.5rem;
+  }
+  .unlockOverlayContent {
+    padding: 1.5rem;
+  }
+  .unlockOverlayContent i {
+    font-size: 3rem;
+  }
+  .unlockOverlayContent h3 {
+    font-size: 1.4rem;
+  }
+  .unlockTierBtn {
+    font-size: 0.9rem;
+    padding: 0.7rem 1.5rem;
+  }
+  .confirmModal {
+    width: 95%;
+  }
+  .confirmActions {
+    flex-direction: column;
+  }
   .modal {
     width: 96vw;
   }
@@ -584,6 +982,32 @@
 @media (max-width: 520px) {
   .challengeGrid {
     grid-template-columns: 1fr;
+  }
+  .tierContainer {
+    padding: 1rem;
+  }
+  .tierTitle {
+    font-size: 1.2rem;
+  }
+  .unlockOverlayContent i {
+    font-size: 2.5rem;
+  }
+  .unlockOverlayContent h3 {
+    font-size: 1.2rem;
+  }
+  .unlockTierBtn {
+    font-size: 0.85rem;
+    padding: 0.65rem 1.2rem;
+  }
+  .confirmIcon {
+    width: 60px;
+    height: 60px;
+  }
+  .confirmIcon i {
+    font-size: 2rem;
+  }
+  .confirmTitle {
+    font-size: 1.25rem;
   }
   .modalContent {
     max-height: calc(92vh - 60px);

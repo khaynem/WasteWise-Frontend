@@ -13,6 +13,7 @@ export default function AdminChallengesPage() {
   const [challenges, setChallenges] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [expandedTiers, setExpandedTiers] = useState({ Basic: true, Intermediate: true, Advanced: true });
 
   useEffect(() => {
     requireAuth(router);
@@ -24,6 +25,7 @@ export default function AdminChallengesPage() {
   const [description, setDescription] = useState("");
   const [instructions, setInstructions] = useState("");
   const [points, setPoints] = useState("");
+  const [tier, setTier] = useState("Basic");
   const [instMode, setInstMode] = useState("paragraph"); // "paragraph" | "bulleted"
   const [rulesText, setRulesText] = useState("");
 
@@ -57,6 +59,7 @@ export default function AdminChallengesPage() {
           description: c.description,
           instructions: c.instructions,
           points: Number(c.points) || 0,
+          tier: c.tier || 'Basic',
           createdAt: c.createdAt ? new Date(c.createdAt).getTime() : Date.now(),
         }));
         items.sort((a, b) => b.createdAt - a.createdAt);
@@ -76,6 +79,7 @@ export default function AdminChallengesPage() {
     setDescription("");
     setInstructions("");
     setPoints("");
+    setTier("Basic");
     setInstMode("paragraph");
     setRulesText("");
   };
@@ -114,8 +118,9 @@ export default function AdminChallengesPage() {
         description: description.trim(),
         instructions: instructionsPayload,
         points: pts,
+        tier: tier
       }, {
-        withCredentials: true,
+        withCredentials: true
       });
       const c = res.data;
       const item = {
@@ -124,6 +129,7 @@ export default function AdminChallengesPage() {
         description: c.description,
         instructions: c.instructions,
         points: Number(c.points) || pts,
+        tier: c.tier || tier,
         createdAt: c.createdAt ? new Date(c.createdAt).getTime() : Date.now(),
       };
       setChallenges((prev) => [item, ...prev]);
@@ -173,11 +179,14 @@ export default function AdminChallengesPage() {
       const data = res.data;
       const items = (Array.isArray(data) ? data : []).map(s => ({
         id: s._id || `${s.userId}-${s.submittedAt}`,
+        _id: s._id,
         username: s.username || "User",
         userId: s.userId,
         proof: s.proof,
         description: s.description,
         submittedAt: s.submittedAt ? new Date(s.submittedAt) : null,
+        status: s.status || 'Pending',
+        rewardedAt: s.rewardedAt ? new Date(s.rewardedAt) : null,
       }));
       setSubmissions(items);
     } catch (e) {
@@ -260,40 +269,69 @@ export default function AdminChallengesPage() {
               ) : error ? (
                 <div className={styles.errorBar}>{error}</div>
               ) : challenges.length ? (
-                <div className={styles.challengeGrid}>
-                  {challenges.map((c) => (
-                    <div key={c.id} className={styles.challengeCard}>
-                      <div className={styles.cardHeaderRow}>
-                        <h3 className={styles.cardTitle}>{c.title}</h3>
-                        <div className={styles.cardActions}>
+                <>
+                  {['Basic', 'Intermediate', 'Advanced'].map(tier => {
+                    const tierChallenges = challenges.filter(c => c.tier === tier);
+                    if (tierChallenges.length === 0) return null;
+
+                    return (
+                      <div key={tier} className={styles.tierSection}>
+                        <div className={styles.tierHeader}>
+                          <h3 className={`${styles.tierTitle} ${styles[`tier${tier}Title`]}`}>
+                            {tier === 'Basic' && <i className="fas fa-seedling" aria-hidden="true" />}
+                            {tier === 'Intermediate' && <i className="fas fa-leaf" aria-hidden="true" />}
+                            {tier === 'Advanced' && <i className="fas fa-trophy" aria-hidden="true" />}
+                            {tier} Challenges
+                          </h3>
                           <button
-                            className={`${styles.actionBtn} ${styles.deleteBtn}`}
-                            onClick={() => askDelete(c)}
-                            title="Delete"
-                            aria-label={`Delete ${c.title}`}
+                            className={styles.tierToggle}
+                            onClick={() => setExpandedTiers(prev => ({ ...prev, [tier]: !prev[tier] }))}
+                            aria-label={`${expandedTiers[tier] ? 'Collapse' : 'Expand'} ${tier} tier`}
                           >
-                            <i className="fas fa-trash-alt" aria-hidden="true" />
+                            <i className={`fas fa-chevron-${expandedTiers[tier] ? 'up' : 'down'}`} aria-hidden="true" />
                           </button>
                         </div>
+                        
+                        {expandedTiers[tier] && (
+                          <div className={styles.challengeGrid}>
+                            {tierChallenges.map((c) => (
+                              <div key={c.id} className={styles.challengeCard}>
+                                <div className={styles.cardHeaderRow}>
+                                  <h3 className={styles.cardTitle}>{c.title}</h3>
+                                  <div className={styles.cardActions}>
+                                    <button
+                                      className={`${styles.actionBtn} ${styles.deleteBtn}`}
+                                      onClick={() => askDelete(c)}
+                                      title="Delete"
+                                      aria-label={`Delete ${c.title}`}
+                                    >
+                                      <i className="fas fa-trash-alt" aria-hidden="true" />
+                                    </button>
+                                  </div>
+                                </div>
+                                <div className={styles.cardPartition} aria-hidden="true" />
+                                <p className={styles.cardDesc}>{c.description}</p>
+                                <div className={styles.cardBottom}>
+                                  <span className={styles.pointsBadge}>
+                                    <i className="fas fa-leaf" aria-hidden="true" /> {c.points} pts
+                                  </span>
+                                  <button
+                                    type="button"
+                                    className={styles.viewBtn}
+                                    onClick={() => openDetail(c)}
+                                    aria-label={`View ${c.title}`}
+                                  >
+                                    View
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
-                      <div className={styles.cardPartition} aria-hidden="true" />
-                      <p className={styles.cardDesc}>{c.description}</p>
-                      <div className={styles.cardBottom}>
-                        <span className={styles.pointsBadge}>
-                          <i className="fas fa-leaf" aria-hidden="true" /> {c.points} pts
-                        </span>
-                        <button
-                          type="button"
-                          className={styles.viewBtn}
-                          onClick={() => openDetail(c)}
-                          aria-label={`View ${c.title}`}
-                        >
-                          View
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    );
+                  })}
+                </>
               ) : (
                 <div className={styles.emptyState}>No challenges found.</div>
               )}
@@ -390,6 +428,19 @@ export default function AdminChallengesPage() {
                 </div>
               </div>
               <div className={styles.formGroup}>
+                <label className={styles.label}>Status</label>
+                <div>
+                  <span className={`${styles.pointsBadge} ${selectedSubmission.status === 'Approved' ? styles.approvedBadge : ''}`}>
+                    {selectedSubmission.status === 'Approved' ? '✓ Approved' : '⏳ Pending'}
+                  </span>
+                  {selectedSubmission.status === 'Approved' && selectedSubmission.rewardedAt && (
+                    <span style={{marginLeft: '8px', fontSize: '0.85rem', color: '#6b7280'}}>
+                      on {formatDateTime(selectedSubmission.rewardedAt)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className={styles.formGroup}>
                 <label className={styles.label}>Description</label>
                 <div className={styles.paragraphText}>{selectedSubmission.description}</div>
               </div>
@@ -403,6 +454,26 @@ export default function AdminChallengesPage() {
                   />
                 </div>
               </div>
+              {selectedSubmission.status === 'Pending' && (
+                <div className={styles.actionsRow}>
+                  <button 
+                    type="button" 
+                    className={styles.buttonPrimary}
+                    onClick={async () => {
+                      try {
+                        await api.post(`/api/admin/submissions/${selectedSubmission._id}/reward`, {}, { withCredentials: true });
+                        toast.success('Points awarded successfully!');
+                        setSubModalOpen(false);
+                        if (selected) loadSubmissions(selected.id);
+                      } catch {
+                        toast.error('Failed to reward submission.');
+                      }
+                    }}
+                  >
+                    <i className="fas fa-gift" aria-hidden="true" /> Reward Points
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -482,9 +553,20 @@ export default function AdminChallengesPage() {
                 </div>
               )}
 
-              <div className={styles.formGroup}>
-                <label className={styles.label} htmlFor="points">Points</label>
-                <input id="points" type="number" min="1" step="1" className={styles.input} value={points} onChange={(e) => setPoints(e.target.value)} placeholder="100" />
+              <div className={styles.formRow}>
+                <div className={styles.formGroup}>
+                  <label className={styles.label} htmlFor="tier">Tier</label>
+                  <select id="tier" className={styles.input} value={tier} onChange={(e) => setTier(e.target.value)}>
+                    <option value="Basic">Basic</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.label} htmlFor="points">Points</label>
+                  <input id="points" type="number" min="1" step="1" className={styles.input} value={points} onChange={(e) => setPoints(e.target.value)} placeholder="100" />
+                </div>
               </div>
 
               <div className={styles.actionsRow}>
